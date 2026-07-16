@@ -6,11 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-package-lock.json
-tsconfig.node.json
-tsconfig.app.json
-tsconfig.json
-
 
 node_modules
 dist
