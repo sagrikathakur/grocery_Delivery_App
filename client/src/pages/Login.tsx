@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { heroSectionData } from '../assets/assets'
-import { BikeIcon, UserIcon, MailIcon, LockIcon } from 'lucide-react'
+import { BikeIcon, UserIcon, MailIcon, LockIcon, Loader2Icon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Login = () => {
@@ -48,7 +48,7 @@ const Login = () => {
       <div className=' flex-1 flex-center px-4 py-12 bg-app-cream'>
         <div className='w-full max-w-md'>
           <div className='text-center mb-8'>
-            <Link to="/" className='inline-flex intems-center gap-2 mb-6' >
+            <Link to="/" className='inline-flex items-center gap-2 mb-6' >
               <BikeIcon className='size-8 text-app-green' />
               <span className='text-2xl font-semibold text-app-green'>Instacart</span>
             </Link>
@@ -86,7 +86,7 @@ const Login = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required={!isLoginState}
-                      className="w-full pl-10 pr-4 py-3  text-sm bg-white rounded-xl border not-focus:border-app-border transition-all"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-app-border focus:border-app-green focus:ring-1 focus:ring-app-green outline-none bg-white text-zinc-900 transition-all text-sm"
                     />
                   </div>
                 </label>
@@ -109,6 +109,8 @@ const Login = () => {
               </div>
             </label>
 
+            {/* password */}
+
             <label className='text-sm flex flex-col gap-1.5 text-app-text-light font-medium'>
               Password
               <div className='relative'>
@@ -124,37 +126,26 @@ const Login = () => {
               </div>
             </label>
 
-            {isLoginState && (
-              <div className="flex items-center justify-between text-xs text-app-text-light font-medium">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-app-green focus:ring-app-green size-4"
-                  />
-                  <span>Remember me</span>
-                </label>
-                <a href="#forgot" className="text-orange-500 hover:text-orange-600 transition-colors">
-                  Forgot password?
-                </a>
-              </div>
-            )}
 
-            <button
-              type="submit"
+
+
+
+            {/* button */}
+
+
+
+
+
+            <button type='submit'
               disabled={loading}
-              className="w-full py-3 bg-app-orange text-white font-semibold rounded-xl hover:bg-app-orange-dark transition-colors disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                isLoginState ? "Sign In" : "Create Account"
-              )}
+              className='flex-center w-full py-3 bg-green-950 text-white font-semibold rounded-xl hover:bg-green-900 transition-colors disabled:opacity-50'>
+
+
+              {
+                loading ? <Loader2Icon className='animate-spin' /> : isLoginState ? "sign in" : "sign up"
+              }
+
+
             </button>
           </form>
 

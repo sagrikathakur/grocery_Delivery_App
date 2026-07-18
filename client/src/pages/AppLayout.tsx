@@ -1,10 +1,11 @@
-import React from 'react'
 import { Outlet } from 'react-router-dom'
+import Banner from '../components/Banner'
 
 const AppLayout = () => {
   return (
     <>
-      <p>banner</p>
+
+      <Banner />
       navbar
       <main>
         <Outlet />
