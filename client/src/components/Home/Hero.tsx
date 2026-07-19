@@ -1,20 +1,8 @@
-import React from 'react'
-import { assets, heroSectionData } from '../assets/assets'
+import { assets, heroSectionData } from '../../assets/assets'
 import { ArrowRightIcon, LeafIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Hero = () => {
-
-
-
-
-
-
-
-
-
-
-
   return (
     <section className='relative overflow-hidden min-h-[540px] mb-10 rounded-3xl flex items-center'>
 
@@ -29,17 +17,17 @@ const Hero = () => {
             </span>
 
             <h1 className='font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-5'>
-              Norish your home with
+              Nourish your home with
               <span className='text-orange-300'>Earth's Finest</span></h1>
 
 
             <p className='text-base text-white/70 leading-relaxed mb-8 max-w-md'>{heroSectionData.description}</p>
-            <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-              <Link to='/products' className='w-full sm:w-fit px-7 py-3 bg-orange-400 text-white font-semibold rounded-full hover:bg-orange-500 transition-all flex-center gap-2 active:scale-[0.98]'>
+            <div className="flex flex-wrap gap-4 items-center">
+              <Link to='/products' className='px-7 py-3 bg-orange-400 text-white font-semibold rounded-full hover:bg-orange-500 transition-all flex-center gap-2 active:scale-[0.98] shrink-0'>
                 Shop Now <ArrowRightIcon className='size-4' />
               </Link>
 
-              <Link to='/products' className='w-full sm:w-fit px-7 py-3 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-all border border-white/20 flex-center gap-2 active:scale-[0.98]'>
+              <Link to='/products' className='px-7 py-3 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-all border border-white/20 flex-center gap-2 active:scale-[0.98] shrink-0'>
                 Browse Categories <ArrowRightIcon className='size-4' />
               </Link>
             </div>
