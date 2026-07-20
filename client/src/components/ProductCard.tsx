@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import type { Product } from "../types"
 import { Plus, Star } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useCart } from "../context/CartContext";
 
 interface Props {
   product: Product;
@@ -9,7 +10,7 @@ interface Props {
 const ProductCard = ({ product }: Props) => {
   const currency = import.meta.env.VITE_CURRENCY_SYMBOL || '$';
   const navigate = useNavigate();
-  const addtocart = (_product: Product) => {};
+  const { addToCart } = useCart();
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow:md transition-all duration-300 group animate-fade-in cursor-pointer"
@@ -54,7 +55,7 @@ const ProductCard = ({ product }: Props) => {
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
-              addtocart(product); 
+              addToCart(product); 
               toast.success(`${product.name} added to cart!`); 
             }}
             className="size-8 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors flex items-center justify-center cursor-pointer shadow hover:shadow-md"
@@ -71,3 +72,4 @@ const ProductCard = ({ product }: Props) => {
 }
 
 export default ProductCard
+
