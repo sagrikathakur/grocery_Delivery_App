@@ -84,11 +84,11 @@ export const footerData = {
     contact: [
         { icon: MapPinIcon, text: "123 Green Valley Rd, Portland" },
         { icon: PhoneIcon, text: "+1 (111) 123-4567" },
-        { icon: MailIcon, text: "hello@example.com" },
+        { icon: MailIcon, text: "sagrikathakur68@gmail.com" },
     ],
 
     bottom: {
-        copyright: "© 2026 Greatstack. All rights reserved.",
+        copyright: "© 2026 Sagrika_Thakur. All rights reserved.",
         links: [
             { label: "Privacy Policy", href: "#" },
             { label: "Terms of Service", href: "#" },
@@ -852,6 +852,6 @@ export const dummyCartData = [
 ];
 
 export const dummyAddressData = [
-    { label: "Home", address: "123 Main St ", city: "New York ", state: "NY", zip: "10001", isDefault: true, lat: 40.7128, lng: -74.006, _id: "69d3652df9a340288f1a0f8c" },
-    { label: "Work", address: "456 Market St ", city: "New York ", state: "NY", zip: "10002", isDefault: false, lat: 40.7128, lng: -74.006, _id: "69d3652df9a340288f1a0f8d" },
+    { label: "Home", address: "Saket vihar Complex ", city: "Delhi ", state: "del", zip: "10001", isDefault: true, lat: 40.7128, lng: -74.006, _id: "69d3652df9a340288f1a0f8c" },
+    { label: "Work", address: "456 Market St ", city: "delhi ", state: "del", zip: "10002", isDefault: false, lat: 40.7128, lng: -74.006, _id: "69d3652df9a340288f1a0f8d" },
 ];
