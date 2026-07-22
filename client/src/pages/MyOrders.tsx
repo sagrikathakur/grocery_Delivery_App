@@ -2,10 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import type { Order, OrderItem } from "../types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { dummyDashboardOrdersData, dummyProducts } from "../assets/assets";
+import { dummyDashboardOrdersData, dummyProducts, statusColors } from "../assets/assets";
 import toast from "react-hot-toast";
-
-
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -95,19 +93,24 @@ const MyOrders = () => {
                   <h3 className="font-bold text-zinc-900">Order #{order._id.slice(-6)}</h3>
                   <p className="text-xs text-zinc-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                 </div>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-full [order.status] || "bg-zinc-100 text-zinc-800"}`}>
+                <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${statusColors[order.status] || "bg-zinc-100 text-zinc-800"}`}>
                   {order.status}
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.product} className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-semibold text-zinc-900">{item.name}</p>
-                      <p className="text-xs text-zinc-500">{item.quantity} x {item.unit}</p>
+                  <div key={item.product} className="flex items-center gap-4">
+                    <div className="size-16 bg-zinc-50 border border-zinc-100 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                      <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
                     </div>
-                    <p className="text-sm font-bold text-zinc-900">${(item.price * item.quantity).toFixed(2)}</p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-zinc-900 truncate">{item.name}</h4>
+                      <p className="text-xs text-zinc-500 mt-0.5">{item.quantity} × {item.unit}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-zinc-900">${(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -115,9 +118,6 @@ const MyOrders = () => {
               <div className="flex justify-between items-center pt-4 mt-4 border-t border-zinc-100">
                 <p className="font-bold text-zinc-900">Total: ${order.total.toFixed(2)}</p>
                 <div className="flex gap-3">
-                  <button onClick={() => navigate(`/orders/${order._id}`)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg">
-                    Track Order
-                  </button>
                   {order.status === "Delivered" && (
                     <button onClick={() => handleOrderAgain(order.items)} className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg">
                       Order Again
