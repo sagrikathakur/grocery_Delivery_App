@@ -4,6 +4,8 @@ import { dummyProducts } from "../assets/assets";
 import { useCart } from "../context/CartContext";
 import { ShoppingCart, Star, Plus, Minus, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
+import DummyReviewsSection from "../assets/DummyReviewsSection";
+import ProductCard from "../components/ProductCard";
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +33,10 @@ const ProductPage = () => {
     addToCart(product, quantity);
     toast.success(`${quantity} x ${product.name} added to cart!`);
   };
+
+  const relatedProducts = dummyProducts.filter(
+    (p) => p.category === product.category && p._id !== product._id
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -106,11 +112,29 @@ const ProductPage = () => {
               <ShoppingCart className="size-5" />
               Add to Cart - ${(product.price * quantity).toFixed(2)}
             </button>
-          </div>
         </div>
       </div>
+    </div>
+
+      {/* customer review */}
+      {product.reviewCount > 0 && <DummyReviewsSection product={product} />}
+
+      {/* related product  */}
+      {relatedProducts.length > 0 && (
+        <section className="mt-16 mb-24">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-zinc-900">Related Products</h2>
+            <p className="text-sm text-zinc-500 mt-1">You might also like these products from the same category</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 xl:gap-8">
+            {relatedProducts.slice(0, 5).map((rp) => (
+              <ProductCard key={rp._id} product={rp} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
 
-export default ProductPage;
+export default ProductPage;

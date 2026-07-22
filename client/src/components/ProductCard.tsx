@@ -14,7 +14,7 @@ const ProductCard = ({ product }: Props) => {
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow:md transition-all duration-300 group animate-fade-in cursor-pointer"
-      onClick={() => navigate(`products/${product._id}`)}>
+      onClick={() => navigate(`/products/${product._id}`)}>
 
       <div className="relative aspect-square overflow-hidden">
         <img src={product.image} alt={product.name} className="w-full h-full object-cover p-4 group-hover:p-2 transition-all duration-300" />
