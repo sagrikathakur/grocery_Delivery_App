@@ -12,6 +12,8 @@ import MyOrders from './pages/MyOrders'
 import Addresses from './pages/Addresses'
 import ProtectedRoute from './components/ProtectedRoute'
 import OrderTracking from './pages/OrderTracking'
+// Admin panel page import
+import Admin from './pages/Admin'
 const App = () => {
   return (
     <>
@@ -39,6 +41,7 @@ const App = () => {
             <Route path='orders' element={<MyOrders />} />
             <Route path='orders/:id/track' element={<OrderTracking />} />
             <Route path='addresses' element={<Addresses />} />
+            <Route path='admin' element={<Admin />} />
           </Route>
         </Route>
 
