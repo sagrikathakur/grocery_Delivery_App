@@ -38,6 +38,9 @@ const Admin = () => {
   // Product Search State
   const [productSearch, setProductSearch] = useState<string>("");
 
+  // OTP Verification State
+  const [enteredOtps, setEnteredOtps] = useState<Record<string, string>>({});
+
   // Add Product Form States
   const [showAddProduct, setShowAddProduct] = useState<boolean>(false);
   const [newProdName, setNewProdName] = useState("");
@@ -133,6 +136,17 @@ const Admin = () => {
     }
 
     toast.success(`Rider ${selectedPartner.name} assigned to order!`);
+  };
+
+  const handleVerifyOtp = (orderId: string, correctOtp: string) => {
+    const entered = enteredOtps[orderId] || "";
+    if (entered.trim() === correctOtp.trim()) {
+      handleStatusChange(orderId, "Delivered");
+      setEnteredOtps({ ...enteredOtps, [orderId]: "" });
+      toast.success("OTP Verified! Order marked as Delivered.");
+    } else {
+      toast.error("Incorrect Delivery OTP. Please check and try again.");
+    }
   };
 
   // --- Product Handlers ---
@@ -451,6 +465,9 @@ const Admin = () => {
                     <p><span className="font-semibold text-app-green">Customer:</span> {order.user.name} ({order.user.email})</p>
                     <p><span className="font-semibold text-app-green">Address:</span> {order.shippingAddress.label} — {order.shippingAddress.address}, {order.shippingAddress.city}</p>
                     <p><span className="font-semibold text-app-green">Items:</span> {order.items.map((i: any) => `${i.name} (Qty: ${i.quantity})`).join(", ")}</p>
+                    {order.deliveryOtp && ["Assigned", "Packed", "Out for Delivery"].includes(order.status) && (
+                      <p><span className="font-semibold text-app-green">Delivery OTP:</span> <span className="font-mono bg-app-orange/10 text-app-orange border border-app-orange/20 px-2 py-0.5 rounded text-xs font-bold">{order.deliveryOtp}</span></p>
+                    )}
                   </div>
                 </div>
 
@@ -481,6 +498,30 @@ const Admin = () => {
                       ))}
                     </select>
                   </div>
+
+                  {order.status === "Out for Delivery" && order.deliveryOtp && (
+                    <div className="flex items-center gap-2 pl-4 border-l border-app-border">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Verify Delivery OTP</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            placeholder="6-digit OTP"
+                            value={enteredOtps[order._id] || ""}
+                            onChange={(e) => setEnteredOtps({ ...enteredOtps, [order._id]: e.target.value })}
+                            className="w-24 px-2 py-1 border border-app-border rounded-lg text-xs focus:border-app-green focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyOtp(order._id, order.deliveryOtp)}
+                            className="px-2.5 py-1.5 bg-app-green hover:bg-app-green-light text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors"
+                          >
+                            Verify
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="text-right pl-4 border-l border-app-border">
                     <p className="text-[10px] text-app-text-light font-bold">Total Bill</p>
