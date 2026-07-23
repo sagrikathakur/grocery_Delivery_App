@@ -11,6 +11,7 @@ import Checkout from './pages/Checkout'
 import MyOrders from './pages/MyOrders'
 import Addresses from './pages/Addresses'
 import ProtectedRoute from './components/ProtectedRoute'
+import OrderTracking from './pages/OrderTracking'
 const App = () => {
   return (
     <>
@@ -36,6 +37,7 @@ const App = () => {
           <Route element={<ProtectedRoute />}>
             <Route path='checkout' element={<Checkout />} />
             <Route path='orders' element={<MyOrders />} />
+            <Route path='orders/:id/track' element={<OrderTracking />} />
             <Route path='addresses' element={<Addresses />} />
           </Route>
         </Route>

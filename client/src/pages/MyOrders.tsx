@@ -119,8 +119,13 @@ const MyOrders = () => {
                 <p className="font-bold text-zinc-900">Total: ${order.total.toFixed(2)}</p>
                 <div className="flex gap-3">
                   {order.status === "Delivered" && (
-                    <button onClick={() => handleOrderAgain(order.items)} className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg">
+                    <button onClick={() => handleOrderAgain(order.items)} className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg cursor-pointer">
                       Order Again
+                    </button>
+                  )}
+                  {order.status !== "Cancelled" && (
+                    <button onClick={() => navigate(`/orders/${order._id}/track`)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+                      Track Order
                     </button>
                   )}
                 </div>

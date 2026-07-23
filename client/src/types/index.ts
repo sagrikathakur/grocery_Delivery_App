@@ -85,5 +85,6 @@ export interface Order {
     deliveryPartner: DeliveryPartner | null;
     deliveryOtp: string;
     isPaid: boolean;
+    liveLocation?: { lat: number; lng: number; updatedAt?: string };
     createdAt: string;
 }
