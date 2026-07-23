@@ -6,7 +6,6 @@ import {
   statusColors 
 } from "../assets/assets";
 import { 
-  LayoutDashboard, 
   ShoppingBag, 
   Package, 
   Users, 
@@ -14,8 +13,6 @@ import {
   Trash2, 
   Edit, 
   Search, 
-  TrendingUp, 
-  AlertCircle,
   Truck,
   Check,
   X
@@ -28,7 +25,7 @@ const dbProducts = dummyProducts as any[];
 const dbPartners = dummyDeliveryPartnerData as any[];
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<string>("overview"); // "overview" | "orders" | "products" | "partners"
+  const [activeTab, setActiveTab] = useState<string>("orders"); // "orders" | "products" | "partners"
 
   // Live component states initialized from local references
   const [orders, setOrders] = useState<any[]>([...dbOrders]);
@@ -64,16 +61,8 @@ const Admin = () => {
   const [newPartnerPhone, setNewPartnerPhone] = useState("");
   const [newPartnerVehicle, setNewPartnerVehicle] = useState<"bike" | "scooter" | "car">("bike");
 
-  // --- Calculations for Overview ---
-  const totalRevenue = orders
-    .filter((o) => o.status !== "Cancelled")
-    .reduce((sum, o) => sum + o.total, 0);
-
-  const outOfStockCount = products.filter((p) => p.stock <= 0).length;
-
   // --- Order Handlers ---
   const handleStatusChange = (orderId: string, newStatus: string) => {
-    // Update local state
     const updated = orders.map((o) => {
       if (o._id === orderId) {
         const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
@@ -96,7 +85,6 @@ const Admin = () => {
     });
     setOrders(updated);
 
-    // Update in-memory reference module
     const foundIdx = dbOrders.findIndex((o) => o._id === orderId);
     if (foundIdx !== -1) {
       dbOrders[foundIdx].status = newStatus;
@@ -120,22 +108,49 @@ const Admin = () => {
     const selectedPartner = partners.find((p) => p._id === partnerId);
     if (!selectedPartner) return;
 
-    // Update local state
+    // Automatically transition order status to Out for Delivery when a rider is assigned
     const updated = orders.map((o) => {
       if (o._id === orderId) {
-        return { ...o, deliveryPartner: selectedPartner };
+        const newStatus = "Out for Delivery";
+        const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
+        const newHistory = hasHistory 
+          ? o.statusHistory 
+          : [...o.statusHistory, { 
+              status: newStatus, 
+              note: `Assigned to ${selectedPartner.name} - Out for Delivery`, 
+              timestamp: new Date().toISOString(),
+              _id: "hist_" + Math.random().toString(36).substring(2, 9)
+            }];
+        return { 
+          ...o, 
+          deliveryPartner: selectedPartner,
+          status: newStatus,
+          statusHistory: newHistory,
+          updatedAt: new Date().toISOString()
+        };
       }
       return o;
     });
     setOrders(updated);
 
-    // Update shared database
     const foundIdx = dbOrders.findIndex((o) => o._id === orderId);
     if (foundIdx !== -1) {
       dbOrders[foundIdx].deliveryPartner = selectedPartner;
+      dbOrders[foundIdx].status = "Out for Delivery";
+      const history = dbOrders[foundIdx].statusHistory;
+      const exists = history.some((h: any) => h.status === "Out for Delivery");
+      if (!exists) {
+        history.push({
+          status: "Out for Delivery",
+          note: `Assigned to ${selectedPartner.name} - Out for Delivery`,
+          timestamp: new Date().toISOString(),
+          _id: "hist_" + Math.random().toString(36).substring(2, 9)
+        });
+      }
+      dbOrders[foundIdx].updatedAt = new Date().toISOString();
     }
 
-    toast.success(`Rider ${selectedPartner.name} assigned to order!`);
+    toast.success(`Rider ${selectedPartner.name} assigned! Order is now Out for Delivery.`);
   };
 
   const handleVerifyOtp = (orderId: string, correctOtp: string) => {
@@ -168,7 +183,6 @@ const Admin = () => {
       return;
     }
 
-    // Update local state
     const updated = products.map((p) => {
       if (p._id === prodId) {
         return { ...p, price: numericPrice, stock: numericStock };
@@ -177,7 +191,6 @@ const Admin = () => {
     });
     setProducts(updated);
 
-    // Update shared assets reference list
     const foundIdx = dbProducts.findIndex((p) => p._id === prodId);
     if (foundIdx !== -1) {
       dbProducts[foundIdx].price = numericPrice;
@@ -191,11 +204,9 @@ const Admin = () => {
   const handleDeleteProduct = (prodId: string) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
-    // Filter local state
     const updated = products.filter((p) => p._id !== prodId);
     setProducts(updated);
 
-    // Update shared database reference
     const idx = dbProducts.findIndex((p) => p._id === prodId);
     if (idx !== -1) dbProducts.splice(idx, 1);
 
@@ -231,11 +242,9 @@ const Admin = () => {
       createdAt: new Date().toISOString(),
     };
 
-    // Update state and database reference array
     setProducts([newProd, ...products]);
     dbProducts.unshift(newProd);
 
-    // Reset Form
     setNewProdName("");
     setNewProdDesc("");
     setNewProdPrice("");
@@ -248,7 +257,6 @@ const Admin = () => {
 
   // --- Partner Handlers ---
   const handleTogglePartnerStatus = (partnerId: string) => {
-    // Update local state
     const updated = partners.map((p) => {
       if (p._id === partnerId) {
         return { ...p, isActive: !p.isActive };
@@ -257,7 +265,6 @@ const Admin = () => {
     });
     setPartners(updated);
 
-    // Update shared database reference
     const foundIdx = dbPartners.findIndex((p) => p._id === partnerId);
     if (foundIdx !== -1) {
       dbPartners[foundIdx].isActive = !dbPartners[foundIdx].isActive;
@@ -286,11 +293,9 @@ const Admin = () => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Update state and shared reference
     setPartners([...partners, newPartner]);
     dbPartners.push(newPartner);
 
-    // Reset Form
     setNewPartnerName("");
     setNewPartnerEmail("");
     setNewPartnerPhone("");
@@ -309,14 +314,13 @@ const Admin = () => {
     <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen mb-20 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-app-border pb-6 mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-app-green tracking-tight">Admin Dashboard</h1>
-          <p className="text-sm text-app-text-light mt-1">Manage grocery items, customer orders, and delivery riders</p>
+          <h1 className="text-2xl font-extrabold text-app-green tracking-tight">Admin Panel</h1>
+          <p className="text-sm text-app-text-light mt-1">Manage grocery orders, products catalog, and riders</p>
         </div>
 
-        {/* Quick Tabs Menu Selector */}
+        {/* Simplified Tabs Selector */}
         <div className="flex bg-white rounded-xl border border-app-border p-1 shadow-xs self-start md:self-auto">
           {[
-            { id: "overview", label: "Overview", icon: LayoutDashboard },
             { id: "orders", label: "Orders", icon: ShoppingBag },
             { id: "products", label: "Products", icon: Package },
             { id: "partners", label: "Riders", icon: Users },
@@ -330,7 +334,7 @@ const Admin = () => {
                   setActiveTab(tab.id);
                   setEditingProdId(null);
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                   isActive 
                     ? "bg-app-green text-white shadow-xs" 
                     : "text-app-text-light hover:text-app-green hover:bg-app-cream-dark"
@@ -344,114 +348,16 @@ const Admin = () => {
         </div>
       </div>
 
-      {/* --- Tab Content 1: Overview Dashboard --- */}
-      {activeTab === "overview" && (
-        <div className="space-y-8 animate-fade-in">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-app-border shadow-xs flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-app-green/5 text-app-green flex-center">
-                <TrendingUp className="size-6" />
-              </div>
-              <div>
-                <p className="text-xs text-app-text-light font-medium uppercase tracking-wider">Total Sales</p>
-                <h3 className="text-xl font-bold text-app-green mt-0.5">${totalRevenue.toFixed(2)}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-app-border shadow-xs flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-app-orange/5 text-app-orange flex-center">
-                <ShoppingBag className="size-6" />
-              </div>
-              <div>
-                <p className="text-xs text-app-text-light font-medium uppercase tracking-wider">Total Orders</p>
-                <h3 className="text-xl font-bold text-app-green mt-0.5">{orders.length}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-app-border shadow-xs flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-indigo-50 text-indigo-700 flex-center">
-                <Package className="size-6" />
-              </div>
-              <div>
-                <p className="text-xs text-app-text-light font-medium uppercase tracking-wider">Products</p>
-                <h3 className="text-xl font-bold text-app-green mt-0.5">{products.length}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-app-border shadow-xs flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-red-50 text-red-600 flex-center">
-                <AlertCircle className="size-6" />
-              </div>
-              <div>
-                <p className="text-xs text-app-text-light font-medium uppercase tracking-wider">Out of Stock</p>
-                <h3 className="text-xl font-bold text-app-green mt-0.5">{outOfStockCount}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-app-border shadow-xs flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-emerald-50 text-emerald-700 flex-center">
-                <Users className="size-6" />
-              </div>
-              <div>
-                <p className="text-xs text-app-text-light font-medium uppercase tracking-wider">Active Riders</p>
-                <h3 className="text-xl font-bold text-app-green mt-0.5">{partners.filter(p => p.isActive).length}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-app-border p-6 shadow-xs">
-            <h2 className="text-lg font-bold text-app-green mb-4">Recent Orders</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-app-border text-app-text-light font-semibold">
-                    <th className="pb-3">Order ID</th>
-                    <th className="pb-3">Customer</th>
-                    <th className="pb-3">Items</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3">Rider</th>
-                    <th className="pb-3 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-app-border font-medium text-app-green">
-                  {orders.map((order) => (
-                    <tr key={order._id}>
-                      <td className="py-4 font-mono text-xs">#{order._id.slice(-6)}</td>
-                      <td className="py-4">{order.user.name || "Customer"}</td>
-                      <td className="py-4 text-xs text-app-text-light">{order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ")}</td>
-                      <td className="py-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColors[order.status] || "bg-zinc-100 text-zinc-800"}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-4 text-xs">
-                        {order.deliveryPartner ? (
-                          <span className="flex items-center gap-1">
-                            <Truck className="size-3 text-app-green-lighter" />
-                            {order.deliveryPartner.name}
-                          </span>
-                        ) : (
-                          <span className="text-app-text-light italic">Unassigned</span>
-                        )}
-                      </td>
-                      <td className="py-4 text-right font-bold">${order.total.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- Tab Content 2: Manage Orders --- */}
+      {/* --- Section 1: Customer Orders Manager --- */}
       {activeTab === "orders" && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-xl font-bold text-app-green">Customer Orders Manager ({orders.length})</h2>
+          <h2 className="text-xl font-bold text-app-green">Orders List ({orders.length})</h2>
 
           <div className="space-y-4">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs flex flex-col lg:flex-row justify-between gap-6">
+                
+                {/* Details Card */}
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-mono font-bold text-sm text-app-green">Order #{order._id}</span>
@@ -471,38 +377,30 @@ const Admin = () => {
                   </div>
                 </div>
 
+                {/* Operations Section */}
                 <div className="flex flex-wrap items-center gap-4 lg:self-center shrink-0">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Update Status</label>
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                      className="px-3 py-2 bg-app-cream rounded-xl border border-app-border text-xs font-semibold text-app-green focus:border-app-green focus:outline-none cursor-pointer"
-                    >
-                      {["Placed", "Confirmed", "Packed", "Out for Delivery", "Delivered", "Cancelled"].map((st) => (
-                        <option key={st} value={st}>{st}</option>
-                      ))}
-                    </select>
-                  </div>
+                  
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Assign Rider</label>
+                  {/* Rider Assign */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Rider</label>
                     <select
                       value={order.deliveryPartner?._id || ""}
                       onChange={(e) => handleAssignPartner(order._id, e.target.value)}
                       className="px-3 py-2 bg-app-cream rounded-xl border border-app-border text-xs font-semibold text-app-green focus:border-app-green focus:outline-none cursor-pointer"
                     >
-                      <option value="" disabled>Select Delivery Hero</option>
+                      <option value="" disabled>Select Rider</option>
                       {partners.map((p) => (
                         <option key={p._id} value={p._id}>{p.name} ({p.vehicleType})</option>
                       ))}
                     </select>
                   </div>
 
+                  {/* OTP Verify Panel */}
                   {order.status === "Out for Delivery" && order.deliveryOtp && (
                     <div className="flex items-center gap-2 pl-4 border-l border-app-border">
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Verify Delivery OTP</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Verify OTP</label>
                         <div className="flex items-center gap-1">
                           <input
                             type="text"
@@ -527,26 +425,30 @@ const Admin = () => {
                     <p className="text-[10px] text-app-text-light font-bold">Total Bill</p>
                     <p className="text-lg font-extrabold text-app-orange">${order.total.toFixed(2)}</p>
                   </div>
+
                 </div>
+
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* --- Tab Content 3: Products Catalog Manager --- */}
+      {/* --- Section 2: Products Catalog Inventory --- */}
       {activeTab === "products" && (
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-xl font-bold text-app-green">Catalog Inventory Manager ({products.length})</h2>
+            <h2 className="text-xl font-bold text-app-green">Inventory Catalog ({products.length})</h2>
+            
             <button
               onClick={() => setShowAddProduct(!showAddProduct)}
               className="px-4 py-2.5 bg-app-orange hover:bg-app-orange-dark text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
             >
-              <Plus className="size-4" /> Add New Product
+              <Plus className="size-4" /> Add Product
             </button>
           </div>
 
+          {/* Add Product Inline Form */}
           {showAddProduct && (
             <form onSubmit={handleCreateProduct} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs space-y-4 max-w-2xl animate-fade-in">
               <div className="flex justify-between items-center pb-2 border-b border-app-border">
@@ -605,7 +507,7 @@ const Admin = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-app-green block mb-1">Product Description</label>
+                <label className="text-xs font-bold text-app-green block mb-1">Description</label>
                 <textarea rows={2} placeholder="Brief product summary..." value={newProdDesc} onChange={(e) => setNewProdDesc(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-app-border text-xs focus:border-app-green" />
               </div>
 
@@ -620,7 +522,7 @@ const Admin = () => {
               <Search className="size-4 text-app-text-light absolute left-3 top-3.5" />
               <input
                 type="text"
-                placeholder="Search catalog by name or category..."
+                placeholder="Search catalog..."
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-app-border text-xs focus:border-app-green bg-app-cream/30 focus:bg-white"
@@ -634,7 +536,7 @@ const Admin = () => {
                     <th className="pb-3">Product</th>
                     <th className="pb-3">Category</th>
                     <th className="pb-3">Price ($)</th>
-                    <th className="pb-3">Inventory Stock</th>
+                    <th className="pb-3">Stock</th>
                     <th className="pb-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -691,10 +593,10 @@ const Admin = () => {
                               </>
                             ) : (
                               <>
-                                <button onClick={() => handleEditProduct(p._id)} className="p-1.5 border border-app-border text-app-green hover:bg-app-cream-dark rounded-lg cursor-pointer" title="Edit Price/Stock">
+                                <button onClick={() => handleEditProduct(p._id)} className="p-1.5 border border-app-border text-app-green hover:bg-app-cream-dark rounded-lg cursor-pointer" title="Edit">
                                   <Edit className="size-3.5" />
                                 </button>
-                                <button onClick={() => handleDeleteProduct(p._id)} className="p-1.5 border border-app-border hover:border-red-200 text-app-text-light hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer" title="Delete Product">
+                                <button onClick={() => handleDeleteProduct(p._id)} className="p-1.5 border border-app-border hover:border-red-200 text-app-text-light hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer" title="Delete">
                                   <Trash2 className="size-3.5" />
                                 </button>
                               </>
@@ -711,16 +613,17 @@ const Admin = () => {
         </div>
       )}
 
-      {/* --- Tab Content 4: Riders (Delivery Partners) --- */}
+      {/* --- Section 3: Riders Fleet Management --- */}
       {activeTab === "partners" && (
         <div className="space-y-6 animate-fade-in">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-app-green">Delivery Fleet Manager ({partners.length})</h2>
+            <h2 className="text-xl font-bold text-app-green">Delivery riders fleet ({partners.length})</h2>
+            
             <button
               onClick={() => setShowAddPartner(!showAddPartner)}
               className="px-4 py-2.5 bg-app-orange hover:bg-app-orange-dark text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
             >
-              <Plus className="size-4" /> Register New Rider
+              <Plus className="size-4" /> Add Rider
             </button>
           </div>
 
@@ -759,7 +662,7 @@ const Admin = () => {
               </div>
 
               <button type="submit" className="px-5 py-2.5 bg-app-green hover:bg-app-green-light text-white text-xs font-semibold rounded-xl cursor-pointer">
-                Save & Register Rider
+                Register Rider
               </button>
             </form>
           )}
