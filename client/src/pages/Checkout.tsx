@@ -44,6 +44,8 @@ const Checkout = () => {
     addresses: dummyAddressData,
   };
 
+
+
   const handlePlaceOrder = () => {
     if (items.length === 0) return;
     setLoading(true);
@@ -119,73 +121,76 @@ const Checkout = () => {
   // Empty cart handler
   if (items.length === 0 && !loading) {
     return (
-      <div className="max-w-md mx-auto px-4 py-16 min-h-[70vh] flex flex-col items-center justify-center text-center animate-fade-in">
-        <div className="bg-white rounded-2xl p-8 border border-app-border shadow-xs w-full">
-          <div className="size-16 rounded-full bg-app-orange/10 flex-center mx-auto mb-6">
-            <ShoppingBag className="size-8 text-app-orange" />
-          </div>
-          <h2 className="text-xl font-bold text-app-green mb-2">Your Cart is Empty</h2>
-          <p className="text-sm text-app-text-light mb-8">
-            Add some fresh items to your cart before proceeding to checkout.
-          </p>
-          <button
-            onClick={() => navigate("/products")}
-            className="w-full py-3 bg-app-orange hover:bg-app-orange-dark text-white rounded-xl font-semibold transition-all cursor-pointer"
-          >
-            Shop Groceries
-          </button>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4">
+          <ShoppingBag className="w-8 h-8" />
         </div>
+        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Your Cart is Empty</h2>
+        <p className="text-zinc-500 mb-6 text-center max-w-md">
+          Looks like you haven't added anything to your cart yet. Explore our fresh products and start shopping!
+        </p>
+        <button
+          onClick={() => navigate("/products")}
+          className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors shadow-lg shadow-orange-500/20"
+        >
+          Browse Products
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen mb-20 animate-fade-in">
-      <h1 className="text-2xl font-bold text-app-green mb-8">Secure Checkout</h1>
-
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Checkout Progress Stepper */}
-      <div className="flex justify-between items-center bg-white rounded-2xl p-4 border border-app-border mb-8 shadow-xs max-w-3xl">
+      <div className="flex items-center justify-center max-w-2xl mx-auto mb-10">
         {[
-          { id: "address", label: "Delivery", icon: MapPin },
+          { id: "address", label: "Address", icon: MapPin },
           { id: "payment", label: "Payment", icon: CreditCard },
-          { id: "review", label: "Review", icon: CheckCircle },
+          { id: "review", label: "Review Order", icon: ShieldCheck },
         ].map((s, idx, arr) => {
           const Icon = s.icon;
           const isActive = step === s.id;
-          const isCompleted = 
-            (step === "payment" && idx === 0) || 
-            (step === "review" && idx <= 1);
+          const isCompleted =
+            (step === "payment" && s.id === "address") ||
+            (step === "review" && (s.id === "address" || s.id === "payment"));
 
           return (
-            <div key={s.id} className="flex-1 flex items-center">
-              <div className="flex items-center gap-2.5">
-                <div className={`size-8 rounded-full flex-center transition-colors ${
-                  isActive ? "bg-app-orange text-white" : 
-                  isCompleted ? "bg-app-green text-white" : "bg-app-cream text-app-text-light"
-                }`}>
-                  <Icon className="size-4" />
+            <div key={s.id} className="flex items-center flex-1 last:flex-initial">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                    isCompleted
+                      ? "bg-emerald-500 text-white"
+                      : isActive
+                      ? "bg-app-green text-white ring-4 ring-app-green/20"
+                      : "bg-app-cream border border-app-border text-app-text-light"
+                  }`}
+                >
+                  {isCompleted ? <CheckCircle className="size-5" /> : <Icon className="size-5" />}
                 </div>
-                <span className={`text-sm font-semibold hidden md:inline ${
-                  isActive || isCompleted ? "text-app-green" : "text-app-text-light"
-                }`}>
+                <span
+                  className={`text-sm font-semibold hidden sm:inline ${
+                    isActive || isCompleted ? "text-zinc-900" : "text-zinc-400"
+                  }`}
+                >
                   {s.label}
                 </span>
               </div>
               {idx < arr.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-4 border-t-2 border-dashed ${
-                  isCompleted ? "border-app-green" : "border-app-border"
-                }`} />
+                <div
+                  className={`flex-1 h-0.5 mx-4 transition-colors ${
+                    isCompleted ? "bg-emerald-500" : "bg-zinc-200"
+                  }`}
+                />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Step details container */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Main Grid: Left Steps + Right Order Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="lg:col-span-8 space-y-6">
           {step === "address" && (
             <CheckoutAddress
               user={mockUser}
@@ -197,9 +202,9 @@ const Checkout = () => {
 
           {step === "payment" && (
             <CheckoutPayment
-              setStep={setStep}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
+              setStep={setStep}
             />
           )}
 
@@ -212,66 +217,45 @@ const Checkout = () => {
               total={total}
             />
           )}
+
         </div>
 
-        {/* Sidebar: Order Summary */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-app-border p-6 shadow-xs sticky top-8">
-            <h3 className="font-bold text-app-green border-b border-app-border pb-4 mb-4 flex items-center gap-2">
-              <ShoppingBag className="size-5 text-app-orange" />
-              Order Summary
-            </h3>
+        {/* Right Summary Card */}
+        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm sticky top-24">
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 pb-3 border-b border-zinc-100">
+            Order Summary
+          </h3>
 
-            {/* Item list */}
-            <div className="max-h-[280px] overflow-y-auto divide-y divide-app-border pr-1 mb-4 no-scrollbar">
-              {items.map((item) => (
-                <div key={item.product._id || (item.product as any).id} className="flex items-center gap-3 py-3 first:pt-0">
-                  <img
-                    src={item.product.image}
-                    alt={item.product.name}
-                    className="size-10 rounded-lg object-contain bg-app-cream p-1 border border-app-border shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-semibold text-app-green truncate">{item.product.name}</h4>
-                    <p className="text-[10px] text-app-text-light mt-0.5">{item.quantity} × {item.product.unit}</p>
-                  </div>
-                  <span className="text-xs font-bold text-app-green shrink-0">
-                    ${(item.product.price * item.quantity).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+          <div className="space-y-3 mb-6">
+            <div className="flex justify-between text-sm text-zinc-600">
+              <span>Subtotal ({items.length} items)</span>
+              <span className="font-semibold text-zinc-900">${cartTotal.toFixed(2)}</span>
             </div>
-
-            {/* Calculations breakdown */}
-            <div className="space-y-2.5 text-xs text-app-text-light border-t border-app-border pt-4 mb-4">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="font-semibold text-app-green">${cartTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery Fee</span>
-                <span className="font-semibold text-app-green">
-                  {deliveryFee === 0 ? "FREE" : `$${deliveryFee.toFixed(2)}`}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>GST (8%)</span>
-                <span className="font-semibold text-app-green">${tax.toFixed(2)}</span>
-              </div>
+            <div className="flex justify-between text-sm text-zinc-600">
+              <span>Delivery Fee</span>
+              {deliveryFee === 0 ? (
+                <span className="font-semibold text-emerald-600">FREE</span>
+              ) : (
+                <span className="font-semibold text-zinc-900">${deliveryFee.toFixed(2)}</span>
+              )}
             </div>
-
-            <div className="flex justify-between font-bold text-sm text-app-green border-t border-app-border pt-4 mb-6">
-              <span>Total Amount</span>
-              <span className="text-base text-app-orange">${total.toFixed(2)}</span>
+            <div className="flex justify-between text-sm text-zinc-600">
+              <span>Estimated Tax (8%)</span>
+              <span className="font-semibold text-zinc-900">${tax.toFixed(2)}</span>
             </div>
-
-            <div className="bg-app-cream-dark p-3.5 rounded-xl border border-app-border flex items-center justify-center gap-2 text-xs text-app-green-light">
-              <ShieldCheck className="size-4 text-app-green" />
-              <span className="font-semibold">Secure SSL encrypted checkout</span>
+            <div className="pt-3 border-t border-zinc-100 flex justify-between items-center">
+              <span className="text-base font-bold text-zinc-900">Total Amount</span>
+              <span className="text-xl font-bold text-emerald-600">${total.toFixed(2)}</span>
             </div>
           </div>
-        </div>
 
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 flex items-start gap-2.5">
+            <ShieldCheck className="size-5 text-emerald-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+              Guaranteed 10-minute ultra-fast delivery. Fresh & organic quality items.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

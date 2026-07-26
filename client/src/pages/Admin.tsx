@@ -32,6 +32,8 @@ const Admin = () => {
   const [products, setProducts] = useState<any[]>([...dbProducts]);
   const [partners, setPartners] = useState<any[]>([...dbPartners]);
 
+
+
   // Product Search State
   const [productSearch, setProductSearch] = useState<string>("");
 

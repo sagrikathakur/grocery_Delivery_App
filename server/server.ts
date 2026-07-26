@@ -1,27 +1,31 @@
 import "dotenv/config";
-import express, { NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import authRouter from "./routes/authRoutes.js";
 import productRouter from "./routes/productRoutes.js";
+import orderRouter from "./routes/orderRoutes.js";
+import addressRouter from "./routes/addressRoutes.js";
+import deliveryRouter from "./routes/deliveryRoutes.js";
 
 const app = express();
 
-// Middleware
-app.use(cors())
+app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Server is Live!');
+app.get("/", (req: Request, res: Response) => {
+  res.send("Server is Live!");
 });
 
-// Routes
-app.use('/api/auth', authRouter);
-app.use('/api/products', productRouter);
+// API Routes
+app.use("/api/auth", authRouter);
+app.use("/api/products", productRouter);
+app.use("/api/orders", orderRouter);
+app.use("/api/addresses", addressRouter);
+app.use("/api/delivery", deliveryRouter);
 
-// error-handlings//
-
+// Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Error:", err);
   const statusCode = err.statusCode || err.status || 500;
@@ -30,8 +34,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     message: err.message || "Internal Server Error"
   });
 });
-
-
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

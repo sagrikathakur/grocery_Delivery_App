@@ -51,84 +51,89 @@ const MyOrders = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-h-screen mb-20">
-      <h1 className="text-2xl font-bold text-zinc-900 mb-6">My Orders</h1>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-zinc-900 mb-2">My Orders</h1>
+      <p className="text-sm text-zinc-500 mb-6">Track and manage your past and active orders</p>
 
       {/* Tabs */}
-      <div className="flex border-b border-zinc-200 mb-6 overflow-x-auto">
-        {tabs.map((tab) => {
-          const count = tab === "all"
-            ? orders.length
-            : orders.filter((o) => o.status.toLowerCase() === tab.toLowerCase()).length;
-
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 px-4 text-sm font-semibold border-b-2 capitalize cursor-pointer ${activeTab === tab
-                  ? "border-orange-500 text-orange-500"
-                  : "border-transparent text-zinc-500 hover:text-zinc-800"
-                }`}
-            >
-              {tab === "all" ? "All Orders" : tab} ({count})
-            </button>
-          );
-        })}
+      <div className="flex gap-2 border-b border-zinc-200 mb-6 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 px-4 text-sm font-medium border-b-2 capitalize transition-colors whitespace-nowrap ${
+              activeTab === tab
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-zinc-500 hover:text-zinc-700"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* List */}
+      {/* Orders List */}
       {filteredOrders.length === 0 ? (
-        <div className="bg-white rounded-xl border border-zinc-100 p-8 text-center shadow-sm">
+        <div className="text-center py-12 bg-white rounded-2xl border border-zinc-200">
           <p className="text-zinc-500 text-sm">No orders found.</p>
-          <button onClick={() => navigate("/products")} className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold">
-            Shop Now
-          </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div key={order._id} className="bg-white rounded-xl border border-zinc-100 shadow-sm p-6">
-              <div className="flex justify-between items-center pb-4 mb-4 border-b border-zinc-100">
+            <div key={order._id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-100">
                 <div>
-                  <h3 className="font-bold text-zinc-900">Order #{order._id.slice(-6)}</h3>
-                  <p className="text-xs text-zinc-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-zinc-400">Order ID: {order._id}</p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {new Date(order.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </p>
                 </div>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${statusColors[order.status] || "bg-zinc-100 text-zinc-800"}`}>
-                  {order.status}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[order.status as keyof typeof statusColors] || "bg-zinc-100 text-zinc-700"}`}>
+                    {order.status}
+                  </span>
+                  <button
+                    onClick={() => navigate(`/orders/${order._id}/track`)}
+                    className="px-4 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-xl hover:bg-orange-600 transition-colors"
+                  >
+                    Track Order
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {order.items.map((item) => (
-                  <div key={item.product} className="flex items-center gap-4">
-                    <div className="size-16 bg-zinc-50 border border-zinc-100 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
-                      <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
+              {/* Order Items */}
+              <div className="py-4 space-y-3">
+                {order.items.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                      <div>
+                        <p className="font-medium text-zinc-900">{item.name}</p>
+                        <p className="text-xs text-zinc-400">Qty: {item.quantity} · ${item.price} each</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-zinc-900 truncate">{item.name}</h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">{item.quantity} × {item.unit}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-zinc-900">${(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
+                    <p className="font-semibold text-zinc-900">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between items-center pt-4 mt-4 border-t border-zinc-100">
-                <p className="font-bold text-zinc-900">Total: ${order.total.toFixed(2)}</p>
-                <div className="flex gap-3">
-                  {order.status === "Delivered" && (
-                    <button onClick={() => handleOrderAgain(order.items)} className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg cursor-pointer">
-                      Order Again
-                    </button>
-                  )}
-                  {order.status !== "Cancelled" && (
-                    <button onClick={() => navigate(`/orders/${order._id}/track`)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
-                      Track Order
-                    </button>
-                  )}
+              <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+                <div>
+                  <span className="text-xs text-zinc-400">Total Amount: </span>
+                  <span className="text-base font-bold text-zinc-900">${order.total.toFixed(2)}</span>
                 </div>
+                <button
+                  onClick={() => handleOrderAgain(order.items)}
+                  className="px-4 py-2 border border-zinc-200 text-zinc-700 text-xs font-semibold rounded-xl hover:bg-zinc-50 transition-colors"
+                >
+                  Order Again
+                </button>
               </div>
             </div>
           ))}
