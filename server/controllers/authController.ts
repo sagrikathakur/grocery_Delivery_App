@@ -2,7 +2,17 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { getAdminStatus } from "../middleware/auth.js";
+
+// Helper to check admin status by email
+const getAdminStatus = (email?: string): boolean => {
+  if (!email) return false;
+  const rawAdminEmails = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "";
+  const adminEmails = rawAdminEmails
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return adminEmails.includes(email.toLowerCase());
+};
 
 // Helper to generate JWT Token
 const generateToken = (id: string) => {
@@ -91,14 +101,28 @@ export const login = async (req: Request, res: Response) => {
 // GET /api/auth/me - Get current logged-in user profile
 export const getMe = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const userId = (req as any).user?.id;
+    if (!userId) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const userData: any = { ...user };
+    delete userData.password;
+    userData.isAdmin = getAdminStatus(user.email);
+
     return res.status(200).json({
       success: true,
-      user: req.user
+      user: userData
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
   }
-};
+};

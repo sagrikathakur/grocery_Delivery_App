@@ -3,9 +3,8 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import authRouter from "./routes/authRoutes.js";
 import productRouter from "./routes/productRoutes.js";
-import orderRouter from "./routes/orderRoutes.js";
-import addressRouter from "./routes/addressRoutes.js";
-import deliveryRouter from "./routes/deliveryRoutes.js";
+import uploadRouter from "./routes/uploadRoutes.js";
+
 
 const app = express();
 
@@ -21,9 +20,8 @@ app.get("/", (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
-app.use("/api/orders", orderRouter);
-app.use("/api/addresses", addressRouter);
-app.use("/api/delivery", deliveryRouter);
+app.use("/api/uploads", uploadRouter);
+
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
