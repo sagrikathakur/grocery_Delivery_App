@@ -10,7 +10,7 @@ import ProductCard from "../components/ProductCard";
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, items, MAX_ITEM_LIMIT } = useCart();
   const [quantity, setQuantity] = useState(1);
 
   const product = dummyProducts.find((p) => p._id === id || (p as any).id === id);
@@ -30,8 +30,9 @@ const ProductPage = () => {
   }
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
-    toast.success(`${quantity} x ${product.name} added to cart!`);
+    if (addToCart(product, quantity)) {
+      toast.success(`${quantity} x ${product.name} added to cart!`);
+    }
   };
 
   const relatedProducts = dummyProducts.filter(
@@ -97,7 +98,25 @@ const ProductPage = () => {
                 </button>
                 <span className="px-4 text-sm font-semibold text-zinc-900">{quantity}</span>
                 <button
-                  onClick={() => setQuantity((q) => q + 1)}
+                  onClick={() => {
+                    const getProdId = (p: any) => (typeof p === "string" ? p : p?._id || p?.id || "");
+                    const targetId = getProdId(product);
+                    const existingItem = items.find((item) => getProdId(item.product) === targetId);
+                    const currentQty = existingItem ? existingItem.quantity : 0;
+                    const cartTotalCount = items.reduce((acc, item) => acc + item.quantity, 0);
+                    const remainingTotalAllowed = MAX_ITEM_LIMIT - cartTotalCount + currentQty;
+                    const maxAllowed = Math.min(MAX_ITEM_LIMIT, remainingTotalAllowed);
+
+                    if (currentQty + quantity >= maxAllowed) {
+                      if (currentQty + quantity >= MAX_ITEM_LIMIT) {
+                        toast.error(`Maximum limit is ${MAX_ITEM_LIMIT} items for this product.${currentQty > 0 ? ` (${currentQty} already in cart)` : ""}`);
+                      } else {
+                        toast.error(`Total cart items limit of ${MAX_ITEM_LIMIT} reached.`);
+                      }
+                    } else {
+                      setQuantity((q) => q + 1);
+                    }
+                  }}
                   className="p-2 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
                 >
                   <Plus className="size-4" />

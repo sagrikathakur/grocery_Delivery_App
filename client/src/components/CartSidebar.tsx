@@ -13,6 +13,7 @@ const CartSidebar = () => {
     clearCart,
     cartTotal,
     cartCount,
+    MAX_ITEM_LIMIT,
   } = useCart();
   const navigate = useNavigate();
 
@@ -117,11 +118,22 @@ const CartSidebar = () => {
                         </span>
                         <button
                           onClick={() => updateQuality(productId, item.quantity + 1)}
-                          className="p-1 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                          disabled={item.quantity >= MAX_ITEM_LIMIT}
+                          className={`p-1 transition-colors ${
+                            item.quantity >= MAX_ITEM_LIMIT
+                              ? "text-zinc-300 cursor-not-allowed bg-zinc-100"
+                              : "text-zinc-600 hover:bg-zinc-200 cursor-pointer"
+                          }`}
+                          title={item.quantity >= MAX_ITEM_LIMIT ? `Maximum limit of ${MAX_ITEM_LIMIT} reached` : "Increase quantity"}
                         >
                           <Plus className="size-3.5" />
                         </button>
                       </div>
+                      {item.quantity >= MAX_ITEM_LIMIT && (
+                        <span className="text-[10px] text-amber-600 bg-amber-50 font-medium px-1.5 py-0.5 rounded border border-amber-200/60">
+                          Max Limit ({MAX_ITEM_LIMIT})
+                        </span>
+                      )}
                       <span className="text-sm font-bold text-zinc-900">
                         ${(item.product.price * item.quantity).toFixed(2)}
                       </span>

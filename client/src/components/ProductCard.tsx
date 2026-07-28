@@ -55,8 +55,9 @@ const ProductCard = ({ product }: Props) => {
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
-              addToCart(product); 
-              toast.success(`${product.name} added to cart!`); 
+              if (addToCart(product)) {
+                toast.success(`${product.name} added to cart!`); 
+              }
             }}
             className="size-8 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors flex items-center justify-center cursor-pointer shadow hover:shadow-md"
             aria-label="Add to cart"

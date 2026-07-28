@@ -31,11 +31,16 @@ const MyOrders = () => {
   }, [searchParams, clearCart, setSearchParams, fetchOrders]);
 
   const handleOrderAgain = (items: OrderItem[]) => {
+    let addedAny = false;
     items.forEach((item) => {
       const prod = dummyProducts.find((p) => p._id === item.product);
-      if (prod) addToCart(prod, item.quantity);
+      if (prod && addToCart(prod, item.quantity)) {
+        addedAny = true;
+      }
     });
-    toast.success("Items added to cart");
+    if (addedAny) {
+      toast.success("Items added to cart");
+    }
   };
 
   const filteredOrders = activeTab === "all"
