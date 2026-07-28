@@ -1,0 +1,25 @@
+import nodemailer from "nodemailer";
+import "dotenv/config";
+
+// Create a transporter using SMTP
+export const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com'
+  ,
+  port: 587,
+  secure: false, // use STARTTLS
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+export const sendEmail = async ({ to, subject, body }: { to: string, subject: string, body: string }) => {
+  const response = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject,
+    html: body
+  })
+  return response
+}
+
+export default transporter;

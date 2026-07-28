@@ -30,6 +30,15 @@ app.use("/api/uploads", uploadRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
+app.post("/api/test/low-stock-alert", async (req: Request, res: Response) => {
+  const { productId } = req.body;
+  await inngest.send({
+    name: "inventory/stock.updated",
+    data: { productId }
+  });
+  res.json({ success: true, message: "Triggered Inngest Low Stock Event!" });
+});
+
 
 
 // Global Error Handler

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { inngest } from "../inngest/index.js";
 
 // POST /api/orders
 export const createOrder = async (req: Request, res: Response) => {
@@ -98,6 +99,15 @@ export const createOrder = async (req: Request, res: Response) => {
       where: { id: items.product },
       data: { stock: { decrement: items.quantity } }
     });
+
+    try {
+      await inngest.send({
+        name: "inventory/stock.updated",
+        data: { productId: items.product }
+      });
+    } catch (e) {
+      console.error("Inngest trigger error:", e);
+    }
   }
 
 
