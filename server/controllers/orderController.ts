@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { inngest } from "../inngest/index.js";
 
 // create order//
 export const createOrder = async (req: Request, res: Response) => {
@@ -40,6 +41,8 @@ export const createOrder = async (req: Request, res: Response) => {
   const tax = Math.round(subtotal * 0.08 * 100) / 100;
   const total = Math.round((subtotal + deliveryFee + tax) * 100) / 100;
 
+  const deliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
   const order = await prisma.order.create({
     data: {
       userId: req.user!.id,
@@ -50,6 +53,7 @@ export const createOrder = async (req: Request, res: Response) => {
       deliveryFee,
       tax,
       total,
+      deliveryOtp,
       statusHistory: [{ status: "placed", note: "order placed", timestamp: new Date() }]
     }
   });
@@ -60,6 +64,16 @@ export const createOrder = async (req: Request, res: Response) => {
       where: { id: item.product },
       data: { stock: { decrement: item.quantity } }
     });
+  }
+
+  // trigger inngest event for 5-min delayed auto-assignment of rider
+  try {
+    await inngest.send({
+      name: "order.placed",
+      data: { orderId: order.id }
+    });
+  } catch (err) {
+    console.error("Failed to send order.placed event to Inngest:", err);
   }
 
   return res.status(201).json(order);

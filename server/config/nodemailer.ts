@@ -22,4 +22,4 @@ export const sendEmail = async ({ to, subject, body }: { to: string, subject: st
   return response
 }
 
-export default transporter;
+export default sendEmail;

@@ -5,10 +5,10 @@ import { sendEmail } from "../config/nodemailer.js";
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "grocery-delivery" });
 
-const LOW_STOCK_THRESHOLD = 5;
+const LOW_STOCK_THRESHOLD = 10;
 
 // low stock alert to admin//
-const lowStockAlert = inngest.createFunction(
+const checkLowStock = inngest.createFunction(
   {
     id: "check-stock-alert",
     name: "low stock alert"
@@ -45,7 +45,7 @@ const lowStockAlert = inngest.createFunction(
                 <p style="margin: 0; font-size: 14px; color: #6b7280;">${product.category} • ${product.unit}</p>
               </div>
             </div>
-            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 16px; padding: 16px; text-align: center;">
               <p style="margin: 0 0 4px; font-size: 13px; color: #991b1b; font-weight: 600;">CURRENT STOCK</p>
               <p style="margin: 0; font-size: 32px; font-weight: 700; color: #dc2626;">${product.stock}</p>
               <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">units remaining</p>
@@ -62,7 +62,7 @@ const lowStockAlert = inngest.createFunction(
       });
     });
 
-    return { alreted: true, success: true, productId: product.id, stock: product.stock };
+    return { alerted: true, success: true, productId: product.id, stock: product.stock };
   }
 );
 
@@ -108,18 +108,18 @@ const sendMonthlyOffers = inngest.createFunction(
 
                 <table width="100%" cellpadding="0" cellspacing="0">
                     ${deals
-                        .reduce((rows: any, _: any, i: number) => {
-                            if (i % 3 === 0) {
-                                rows.push(deals.slice(i, i + 3));
-                            }
-                            return rows;
-                        }, [])
-                        .map(
-                            (row: any) => `
+                      .reduce((rows: any, _: any, i: number) => {
+                        if (i % 3 === 0) {
+                          rows.push(deals.slice(i, i + 3));
+                        }
+                        return rows;
+                      }, [])
+                      .map(
+                        (row: any) => `
                             <tr>
                                 ${row
-                                    .map(
-                                        (p: any) => `
+                                  .map(
+                                    (p: any) => `
                                         <td style="width: 33%; padding: 8px; vertical-align: top;">
                                             <div style="border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; text-align: center;">
                                                 ${p.image ? `<img src="${p.image}" alt="${p.name}" style="width: 100%; height: 100px; object-fit: cover;" />` : ""}
@@ -134,11 +134,11 @@ const sendMonthlyOffers = inngest.createFunction(
                                                 </div>
                                             </div>
                                         </td>`
-                                    )
-                                    .join("")}
+                                  )
+                                  .join("")}
                             </tr>`
-                        )
-                        .join("")}
+                      )
+                      .join("")}
                 </table>
 
                 <div style="text-align: center; margin-top: 24px;">
@@ -163,4 +163,66 @@ const sendMonthlyOffers = inngest.createFunction(
   }
 );
 
-export const functions = [lowStockAlert, sendMonthlyOffers];
+// auto assign delivery partner / rider section
+const assignDeliveryPartner = inngest.createFunction(
+  {
+    id: "assign-delivery-partner",
+    name: "Assign Delivery Partner to Order"
+  },
+  { event: "order.placed" },
+  async ({ event, step }) => {
+    const { orderId } = event.data;
+
+    // Wait 5 minutes after order is placed before auto-assigning rider
+    await step.sleep("wait-5-minutes", "5m");
+
+    const order = await step.run("fetch-order", async () => {
+      return await prisma.order.findUnique({ where: { id: orderId } });
+    });
+
+    if (!order) return { skipped: true, reason: "Order not found" };
+    if (order.deliveryPartnerId) return { skipped: true, reason: "Partner already assigned" };
+
+    // Find riders who currently have active orders
+    const busyPartnerIds = await step.run("find-busy-riders", async () => {
+      const busyOrders = await prisma.order.findMany({
+        where: {
+          status: { in: ["Placed", "Processing", "Out for Delivery"] },
+          deliveryPartnerId: { not: null }
+        },
+        select: { deliveryPartnerId: true }
+      });
+      return busyOrders.map((o) => o.deliveryPartnerId).filter(Boolean) as string[];
+    });
+
+    // Find available active rider
+    const availableRider = await step.run("find-available-rider", async () => {
+      return await prisma.deliveryPartner.findFirst({
+        where: {
+          isActive: true,
+          id: { notIn: busyPartnerIds }
+        }
+      });
+    });
+
+    if (!availableRider) {
+      return { success: false, message: "No active riders available" };
+    }
+
+    const deliveryOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await step.run("update-order-partner", async () => {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          deliveryPartnerId: availableRider.id,
+          deliveryOtp
+        }
+      });
+    });
+
+    return { success: true, orderId, deliveryPartnerId: availableRider.id, deliveryOtp };
+  }
+);
+
+export const functions = [checkLowStock, sendMonthlyOffers, assignDeliveryPartner];
