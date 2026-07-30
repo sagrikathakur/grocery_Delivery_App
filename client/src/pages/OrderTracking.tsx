@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Order } from '../types';
-import { dummyDashboardOrdersData } from '../assets/assets';
 import Loading from '../components/Loading';
 import LiveMap from '../components/OrderTracking/LiveMap';
 import OrderOTP from '../components/OrderTracking/OrderOTP';
 import OrderTimeLine from '../components/OrderTracking/OrderTimeLine';
+import AddressCard from '../components/AddressCard';
+import api from '../config/api';
 import {
   ArrowLeft,
   Phone,
@@ -27,9 +28,24 @@ const OrderTracking = () => {
   const [liveLocation, setLiveLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    const foundOrder = dummyDashboardOrdersData.find((o) => o.id === id);
-    if (foundOrder) setOrder(foundOrder as unknown as Order);
-    setLoading(false);
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/orders/${id}`);
+        if (res.data) {
+          setOrder(res.data.order || res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch order tracking data:", err);
+        setOrder(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOrder();
+    }
   }, [id, navigate]);
 
   // Simulated live movements for active orders in transit
@@ -97,7 +113,7 @@ const OrderTracking = () => {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-app-green">Track Order</h1>
             <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${order.status === "Delivered" ? "bg-green-100 text-green-700" :
-                order.status === "Cancelled" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+              order.status === "Cancelled" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
               }`}>
               {order.status}
             </span>
@@ -204,23 +220,20 @@ const OrderTracking = () => {
   );
 
   const renderAddressCard = () => (
-    <div className="bg-white rounded-2xl border border-app-border p-6 shadow-xs">
-      <h3 className="font-semibold text-app-green mb-4 flex items-center gap-2">
-        <MapPin className="size-4 text-app-orange" />
-        Delivery Address
-      </h3>
-      <div>
-        <p className="text-xs bg-app-orange/10 text-app-orange px-2 py-0.5 rounded-md inline-block font-bold mb-2">
-          {order.shippingAddress.label}
-        </p>
-        <p className="text-sm font-semibold text-app-green leading-relaxed">
-          {order.shippingAddress.address}
-        </p>
-        <p className="text-xs text-app-text-light mt-1">
-          {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}
-        </p>
-      </div>
-    </div>
+    <AddressCard
+      address={{
+        id: 'shipping',
+        label: order.shippingAddress.label,
+        address: order.shippingAddress.address,
+        city: order.shippingAddress.city,
+        state: order.shippingAddress.state,
+        zip: order.shippingAddress.zip,
+        isDefault: false,
+        lat: order.shippingAddress.lat || 0,
+        lng: order.shippingAddress.lng || 0,
+      }}
+      variant="order"
+    />
   );
 
   const renderPaymentSummary = () => (

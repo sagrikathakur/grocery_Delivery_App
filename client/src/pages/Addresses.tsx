@@ -1,72 +1,91 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { dummyAddressData } from "../assets/assets";
 import {
   ArrowLeft,
   MapPin,
-  Trash2,
   Plus,
   Check,
   Home,
   Briefcase
 } from "lucide-react";
+import AddressCard from "../components/AddressCard";
 import toast from "react-hot-toast";
+import api from "../config/api";
 
 const Addresses = () => {
   const navigate = useNavigate();
-  const [addresses, setAddresses] = useState<any[]>(dummyAddressData);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Form State
-  const [label, setLabel] = useState<string>("Home"); // "Home" | "Work" | "Other"
+  const [label, setLabel] = useState<string>("Home");
   const [addressLine, setAddressLine] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [state, setState] = useState<string>("");
   const [zip, setZip] = useState<string>("");
 
-  const handleSetDefault = (id: string) => {
-    // Update local state
-    const updated = addresses.map((addr) => ({
-      ...addr,
-      isDefault: addr.id === id,
-    }));
-    setAddresses(updated);
-
-    // Update in-memory reference
-    dummyAddressData.forEach((addr) => {
-      addr.isDefault = addr.id === id;
-    });
-
-    toast.success("Default address updated!");
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/addresses");
+      if (res.data && Array.isArray(res.data.addresses)) {
+        setAddresses(res.data.addresses);
+      } else {
+        setAddresses([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+      setAddresses([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteAddress = (id: string) => {
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const handleSetDefault = async (id: string) => {
+    const target = addresses.find((addr) => addr.id === id);
+    try {
+      const res = await api.put(`/addresses/${id}`, {
+        isDefault: true,
+        lat: target?.lat ?? 40.7128,
+        lng: target?.lng ?? -74.006,
+      });
+      if (res.data && res.data.addresses) {
+        setAddresses(res.data.addresses);
+      } else {
+        setAddresses((prev) =>
+          prev.map((addr) => ({ ...addr, isDefault: addr.id === id }))
+        );
+      }
+      toast.success("Default address updated!");
+    } catch (error) {
+      toast.error("Failed to update default address.");
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
     if (addresses.length <= 1) {
       toast.error("You must have at least one address.");
       return;
     }
 
-    const wasDefault = addresses.find((addr) => addr.id === id)?.isDefault;
-
-    // Filter local state
-    let updated = addresses.filter((addr) => addr.id !== id);
-    if (wasDefault && updated.length > 0) {
-      updated[0].isDefault = true;
+    try {
+      const res = await api.delete(`/addresses/${id}`);
+      if (res.data && res.data.addresses) {
+        setAddresses(res.data.addresses);
+      } else {
+        setAddresses((prev) => prev.filter((addr) => addr.id !== id));
+      }
+      toast.success("Address removed successfully!");
+    } catch (error) {
+      toast.error("Failed to delete address.");
     }
-    setAddresses(updated);
-
-    // Filter in-memory database reference
-    const idx = dummyAddressData.findIndex((addr) => addr.id === id);
-    if (idx !== -1) dummyAddressData.splice(idx, 1);
-
-    // Maintain at least one default
-    if (wasDefault && dummyAddressData.length > 0) {
-      dummyAddressData[0].isDefault = true;
-    }
-
-    toast.success("Address removed successfully!");
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!addressLine.trim() || !city.trim() || !state.trim() || !zip.trim()) {
@@ -74,35 +93,36 @@ const Addresses = () => {
       return;
     }
 
-    const newAddress = {
-      id: "addr_" + Math.random().toString(36).substring(2, 9),
+    const payload = {
       label: label,
       address: addressLine,
       city: city,
       state: state,
       zip: zip,
-      isDefault: addresses.length === 0, // default if it's the only one
+      isDefault: addresses.length === 0,
       lat: 40.7128,
       lng: -74.006,
     };
 
-    // Update local state
-    const updated = [...addresses, newAddress];
-    setAddresses(updated);
-
-    // Update in-memory database reference
-    dummyAddressData.push(newAddress);
+    try {
+      const res = await api.post("/addresses", payload);
+      if (res.data && res.data.address) {
+        setAddresses((prev) => [res.data.address, ...prev]);
+      } else {
+        fetchAddresses();
+      }
+      toast.success("New address saved!");
+    } catch (error) {
+      toast.error("Failed to save address.");
+    }
 
     // Reset Form
     setAddressLine("");
     setCity("");
     setState("");
     setZip("");
-
-    toast.success("New address saved!");
   };
 
-  // Helper to render label icons
   const getLabelIcon = (lbl: string) => {
     switch (lbl.toLowerCase()) {
       case "home":
@@ -136,61 +156,23 @@ const Addresses = () => {
         {/* Left Column: Address List */}
         <div className="lg:col-span-7 space-y-4">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">Saved Locations</h2>
-          {addresses.length === 0 ? (
+          {loading ? (
+            <div className="p-8 text-center bg-zinc-50 rounded-2xl border border-zinc-200">
+              <p className="text-zinc-500 font-medium animate-pulse">Loading addresses...</p>
+            </div>
+          ) : addresses.length === 0 ? (
             <div className="p-8 text-center bg-zinc-50 rounded-2xl border border-zinc-200">
               <MapPin className="size-8 text-zinc-400 mx-auto mb-2" />
               <p className="text-zinc-500 font-medium">No addresses saved yet</p>
             </div>
           ) : (
             addresses.map((addr) => (
-              <div
+              <AddressCard
                 key={addr.id}
-                className={`p-5 rounded-2xl border transition-all ${addr.isDefault
-                    ? "bg-emerald-50/40 border-emerald-500/30 ring-1 ring-emerald-500/20"
-                    : "bg-white border-zinc-200 hover:border-zinc-300"
-                  }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex gap-3">
-                    <div className={`p-2.5 rounded-xl h-fit ${addr.isDefault ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600"
-                      }`}>
-                      {getLabelIcon(addr.label)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-zinc-900">{addr.label}</span>
-                        {addr.isDefault && (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md">
-                            DEFAULT
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-zinc-600 mt-1 font-medium">{addr.address}</p>
-                      <p className="text-xs text-zinc-400 mt-0.5">
-                        {addr.city}, {addr.state} {addr.zip}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {!addr.isDefault && (
-                      <button
-                        onClick={() => handleSetDefault(addr.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors border border-zinc-200"
-                      >
-                        Set Default
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteAddress(addr.id)}
-                      className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Address"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                address={addr}
+                onSetDefault={handleSetDefault}
+                onDelete={handleDeleteAddress}
+              />
             ))
           )}
         </div>
@@ -214,10 +196,11 @@ const Addresses = () => {
                     key={lbl}
                     type="button"
                     onClick={() => setLabel(lbl)}
-                    className={`py-2 px-3 text-xs font-medium rounded-xl border flex items-center justify-center gap-1.5 transition-all ${label === lbl
+                    className={`py-2 px-3 text-xs font-medium rounded-xl border flex items-center justify-center gap-1.5 transition-all ${
+                      label === lbl
                         ? "bg-zinc-900 border-zinc-900 text-white shadow-sm"
                         : "bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-                      }`}
+                    }`}
                   >
                     {getLabelIcon(lbl)}
                     {lbl}
@@ -286,7 +269,7 @@ const Addresses = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full mt-2 py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+              className="w-full mt-2 py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
             >
               <Check className="size-4" />
               Save Address

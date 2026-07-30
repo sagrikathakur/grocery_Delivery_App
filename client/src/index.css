@@ -15,8 +15,8 @@
   --color-app-green-lighter: #3d6b4a;
   --color-app-orange: #f97316;
   --color-app-orange-dark: #ea580c;
-  --color-app-cream: #faf7f2;
-  --color-app-cream-dark: #f0ebe3;
+  --color-app-cream: #ffffff;
+  --color-app-cream-dark: #f8fafc;
   --color-app-text: #1b3022;
   --color-app-text-light: #6b7280;
   --color-app-border: #e5e7eb;
@@ -31,7 +31,7 @@
 body {
   font-family: var(--font-sans);
   color: var(--color-app-text);
-  background-color: var(--color-app-cream);
+  background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

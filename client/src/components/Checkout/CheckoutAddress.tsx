@@ -1,5 +1,6 @@
 import { ChevronRightIcon, MapPinIcon, PlusIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AddressCard from '../AddressCard';
 
 const CheckoutAddress = ({ user, address, setAddress, setStep }: any) => {
     return (
@@ -12,27 +13,21 @@ const CheckoutAddress = ({ user, address, setAddress, setStep }: any) => {
                     <h3 className="text-sm font-semibold text-app-green mb-3">Saved Addresses</h3>
                     <div className="grid sm:grid-cols-2 gap-3">
                         {user.addresses.map((addr: any) => (
-                            <div
+                            <AddressCard
                                 key={addr.id || addr.label}
-                                onClick={() => setAddress({
-                                    label: addr.label,
-                                    address: addr.address,
-                                    city: addr.city,
-                                    state: addr.state,
-                                    zip: addr.zip,
-                                    lat: addr.lat,
-                                    lng: addr.lng,
+                                address={addr}
+                                variant="checkout"
+                                isSelected={address.label === addr.label && address.address === addr.address}
+                                onSelect={(selectedAddr) => setAddress({
+                                    label: selectedAddr.label,
+                                    address: selectedAddr.address,
+                                    city: selectedAddr.city,
+                                    state: selectedAddr.state,
+                                    zip: selectedAddr.zip,
+                                    lat: selectedAddr.lat,
+                                    lng: selectedAddr.lng,
                                 })}
-                                className={`p-4 rounded-xl border cursor-pointer transition-colors ${address.label === addr.label && address.address === addr.address ? 'border-app-green bg-app-cream' : 'border-app-border hover:bg-app-cream'}`}
-                            >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <MapPinIcon className="size-4 text-app-green" />
-                                    <span className="font-semibold text-zinc-900 text-sm">{addr.label}</span>
-                                    {addr.isDefault && <span className="text-[10px] font-semibold text-app-orange uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-full">Default</span>}
-                                </div>
-                                <p className="text-sm text-zinc-600 truncate">{addr.address}</p>
-                                <p className="text-xs text-zinc-500">{addr.city}, {addr.state} {addr.zip}</p>
-                            </div>
+                            />
                         ))}
                     </div>
                 </div>

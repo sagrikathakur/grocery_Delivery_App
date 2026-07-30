@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import CheckoutAddress from "../components/Checkout/CheckoutAddress";
 import CheckoutPayment from "../components/Checkout/CheckoutPayment";
 import CheckoutReview from "../components/Checkout/CheckoutReview";
-import { dummyAddressData, dummyDashboardOrdersData } from "../assets/assets";
+import api from "../config/api";
 import {
   ShoppingBag,
   MapPin,
@@ -18,105 +18,82 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { items, cartTotal, clearCart } = useCart();
 
+  const [userAddresses, setUserAddresses] = useState<any[]>([]);
   const [step, setStep] = useState<string>("address"); // "address" | "payment" | "review"
   const [address, setAddress] = useState<any>({
-    id: dummyAddressData[0]?.id || "",
-    label: dummyAddressData[0]?.label || "",
-    address: dummyAddressData[0]?.address || "",
-    city: dummyAddressData[0]?.city || "",
-    state: dummyAddressData[0]?.state || "",
-    zip: dummyAddressData[0]?.zip || "",
-    isDefault: dummyAddressData[0]?.isDefault || false,
-    lat: dummyAddressData[0]?.lat || 40.7128,
-    lng: dummyAddressData[0]?.lng || -74.006,
+    id: "",
+    label: "Home",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    isDefault: false,
+    lat: 40.7128,
+    lng: -74.006,
   });
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    api.get("/addresses")
+      .then((res) => {
+        if (res.data?.addresses && res.data.addresses.length > 0) {
+          setUserAddresses(res.data.addresses);
+          const defaultAddr = res.data.addresses.find((a: any) => a.isDefault) || res.data.addresses[0];
+          setAddress(defaultAddr);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load user addresses for checkout:", err);
+      });
+  }, []);
 
   // Cart summary calculations
   const deliveryFee = cartTotal > 20 ? 0 : 5.00;
   const tax = cartTotal * 0.08;
   const total = cartTotal + deliveryFee + tax;
 
-  const mockUser = {
-    name: "John Doe",
-    email: "john@gmail.com",
-    addresses: dummyAddressData,
+  const handlePlaceOrder = async () => {
+  if (items.length === 0) return;
+  setLoading(true);
+
+  const payload = {
+    items: items.map((item) => ({
+      product: item.product.id,
+      quantity: item.quantity,
+    })),
+    shippingAddress: {
+      label: address.label || "Home",
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      zip: address.zip,
+      lat: address.lat || 40.7128,
+      lng: address.lng || -74.006,
+    },
+    paymentMethod: paymentMethod || "card",
   };
 
+  try {
+    const res = await api.post("/orders", payload);
+    const createdOrder = res.data?.order || res.data;
+    const orderId = createdOrder?.id || createdOrder?._id;
 
-
-  const handlePlaceOrder = () => {
-    if (items.length === 0) return;
-    setLoading(true);
-
-    // Simulate order placement delay for rich user feedback
-    setTimeout(() => {
-      const orderId = "order_" + Math.random().toString(36).substring(2, 9);
-
-      const newOrder = {
-        id: orderId,
-        user: {
-          id: "user_john",
-          name: mockUser.name,
-          email: mockUser.email,
-        },
-        items: items.map((item) => ({
-          product: item.product.id || (item.product as any).id,
-          name: item.product.name,
-          image: item.product.image,
-          price: item.product.price,
-          quantity: item.quantity,
-          unit: item.product.unit,
-        })),
-        shippingAddress: {
-          label: address.label,
-          address: address.address,
-          city: address.city,
-          state: address.state,
-          zip: address.zip,
-          lat: address.lat,
-          lng: address.lng,
-        },
-        paymentMethod: paymentMethod,
-        subtotal: cartTotal,
-        deliveryFee: deliveryFee,
-        tax: Number(tax.toFixed(2)),
-        total: Number(total.toFixed(2)),
-        status: "Placed",
-        statusHistory: [
-          {
-            status: "Placed",
-            note: "Order placed successfully",
-            timestamp: new Date().toISOString(),
-            id: "hist_" + Math.random().toString(36).substring(2, 9),
-          },
-        ],
-        deliveryPartner: {
-          id: "69bbfc3866db7c6cdea47ede",
-          name: "Rahul",
-          email: "rahul@example.com",
-          phone: "987654321",
-          vehicleType: "bike",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-        deliveryOtp: Math.floor(100000 + Math.random() * 900000).toString(),
-        isPaid: paymentMethod === "card",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Push to the in-memory array so the order page can resolve it
-      dummyDashboardOrdersData.push(newOrder as any);
-
-      // Clean the cart and direct user to active order tracking
-      clearCart();
-      setLoading(false);
-      toast.success("Order placed successfully!");
+    clearCart();
+    toast.success("Order placed successfully!");
+    if (orderId) {
       navigate(`/orders/${orderId}/track`);
-    }, 1500);
-  };
+    } else {
+      navigate("/orders");
+    }
+  } catch (error: any) {
+    console.error("Failed to place order:", error);
+    const msg = error.response?.data?.message || "Failed to place order. Please try again.";
+    toast.error(msg);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Empty cart handler
   if (items.length === 0 && !loading) {
@@ -190,7 +167,7 @@ const Checkout = () => {
         <div className="lg:col-span-8 space-y-6">
           {step === "address" && (
             <CheckoutAddress
-              user={mockUser}
+              user={{ addresses: userAddresses }}
               address={address}
               setAddress={setAddress}
               setStep={setStep}

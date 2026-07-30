@@ -27,13 +27,13 @@ const ProductPage = () => {
       .get("/products")
       .then((res) => {
         const productList: Product[] = res.data?.products || [];
-        const found = productList.find((p) => p.id === id || (p as any)._id === id);
+        const found = productList.find((p) => p.id === id || (p as any).id === id);
         if (found) {
-          const normalizedFound = { ...found, id: found.id || (found as any)._id };
+          const normalizedFound = { ...found, id: found.id || (found as any).id };
           setProduct(normalizedFound);
           const related = productList
-            .filter((p) => p.category === found.category && p.id !== id && (p as any)._id !== id)
-            .map((p) => ({ ...p, id: p.id || (p as any)._id }));
+            .filter((p) => p.category === found.category && p.id !== id && (p as any).id !== id)
+            .map((p) => ({ ...p, id: p.id || (p as any).id }));
           setRelatedProducts(related);
         } else {
           setProduct(null);
@@ -135,7 +135,7 @@ const ProductPage = () => {
                 <span className="px-4 text-sm font-semibold text-zinc-900">{quantity}</span>
                 <button
                   onClick={() => {
-                    const getProdId = (p: any) => (typeof p === "string" ? p : p?.id || p?._id || "");
+                    const getProdId = (p: any) => (typeof p === "string" ? p : p?.id || p?.id || "");
                     const targetId = getProdId(product);
                     const existingItem = items.find((item) => getProdId(item.product) === targetId);
                     const currentQty = existingItem ? existingItem.quantity : 0;

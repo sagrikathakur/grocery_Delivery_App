@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import api from "../config/api";
-import {
-  dummyDashboardOrdersData,
-  dummyDeliveryPartnerData,
-  statusColors
-} from "../assets/assets";
+import { statusColors } from "../assets/assets";
 import {
   ShoppingBag,
   Package,
@@ -19,18 +15,43 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-// Explicitly type-cast shared datasets to any[] at module-level to bypass shape-mismatch compiler warnings
-const dbOrders = dummyDashboardOrdersData as any[];
-const dbProducts: any[] = [];
-const dbPartners = dummyDeliveryPartnerData as any[];
-
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<string>("orders"); // "orders" | "products" | "partners"
 
-  // Live component states initialized from local references
-  const [orders, setOrders] = useState<any[]>([...dbOrders]);
+  // Live component states initialized from API
+  const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [partners, setPartners] = useState<any[]>([...dbPartners]);
+  const [partners, setPartners] = useState<any[]>([]);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await api.get("/orders/admin/all");
+      if (res.data?.orders) {
+        setOrders(res.data.orders);
+      } else if (Array.isArray(res.data)) {
+        setOrders(res.data);
+      }
+    } catch (err) {
+      try {
+        const res2 = await api.get("/orders/all");
+        if (res2.data?.orders) setOrders(res2.data.orders);
+        else if (Array.isArray(res2.data)) setOrders(res2.data);
+      } catch (e) {
+        console.error("Failed to fetch admin orders:", e);
+      }
+    }
+  };
+
+  const fetchPartners = async () => {
+    try {
+      const res = await api.get("/admin/partners");
+      if (res.data?.partners) {
+        setPartners(res.data.partners);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin delivery partners:", err);
+    }
+  };
 
   React.useEffect(() => {
     api.get("/products")
@@ -38,7 +59,7 @@ const Admin = () => {
         if (res.data?.products) {
           const normalized = res.data.products.map((p: any) => ({
             ...p,
-            id: p.id || p._id,
+            id: p.id || p.id,
           }));
           setProducts(normalized);
         }
@@ -46,6 +67,9 @@ const Admin = () => {
       .catch((err) => {
         console.error("Failed to fetch admin products:", err);
       });
+
+    fetchOrders();
+    fetchPartners();
   }, []);
 
 
@@ -80,95 +104,27 @@ const Admin = () => {
   const [newPartnerVehicle, setNewPartnerVehicle] = useState<"bike" | "scooter" | "car">("bike");
 
   // --- Order Handlers ---
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    const updated = orders.map((o) => {
-      if (o.id === orderId) {
-        const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
-        const newHistory = hasHistory
-          ? o.statusHistory
-          : [...o.statusHistory, {
-            status: newStatus,
-            note: `Status updated to ${newStatus}`,
-            timestamp: new Date().toISOString(),
-            id: "hist_" + Math.random().toString(36).substring(2, 9)
-          }];
-        return {
-          ...o,
-          status: newStatus,
-          statusHistory: newHistory,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return o;
-    });
-    setOrders(updated);
-
-    const foundIdx = dbOrders.findIndex((o) => o.id === orderId);
-    if (foundIdx !== -1) {
-      dbOrders[foundIdx].status = newStatus;
-      const history = dbOrders[foundIdx].statusHistory;
-      const exists = history.some((h: any) => h.status === newStatus);
-      if (!exists) {
-        history.push({
-          status: newStatus,
-          note: `Status updated to ${newStatus}`,
-          timestamp: new Date().toISOString(),
-          id: "hist_" + Math.random().toString(36).substring(2, 9)
-        });
-      }
-      dbOrders[foundIdx].updatedAt = new Date().toISOString();
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      await api.put(`/orders/${orderId}/status`, { status: newStatus });
+      toast.success(`Order status updated to ${newStatus}`);
+      fetchOrders();
+    } catch (err) {
+      toast.error("Failed to update order status");
     }
-
-    toast.success(`Order status updated to ${newStatus}`);
   };
 
-  const handleAssignPartner = (orderId: string, partnerId: string) => {
+  const handleAssignPartner = async (orderId: string, partnerId: string) => {
     const selectedPartner = partners.find((p) => p.id === partnerId);
     if (!selectedPartner) return;
 
-    // Automatically transition order status to Out for Delivery when a rider is assigned
-    const updated = orders.map((o) => {
-      if (o.id === orderId) {
-        const newStatus = "Out for Delivery";
-        const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
-        const newHistory = hasHistory
-          ? o.statusHistory
-          : [...o.statusHistory, {
-            status: newStatus,
-            note: `Assigned to ${selectedPartner.name} - Out for Delivery`,
-            timestamp: new Date().toISOString(),
-            id: "hist_" + Math.random().toString(36).substring(2, 9)
-          }];
-        return {
-          ...o,
-          deliveryPartner: selectedPartner,
-          status: newStatus,
-          statusHistory: newHistory,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return o;
-    });
-    setOrders(updated);
-
-    const foundIdx = dbOrders.findIndex((o) => o.id === orderId);
-    if (foundIdx !== -1) {
-      dbOrders[foundIdx].deliveryPartner = selectedPartner;
-      dbOrders[foundIdx].status = "Out for Delivery";
-      const history = dbOrders[foundIdx].statusHistory;
-      const exists = history.some((h: any) => h.status === "Out for Delivery");
-      if (!exists) {
-        history.push({
-          status: "Out for Delivery",
-          note: `Assigned to ${selectedPartner.name} - Out for Delivery`,
-          timestamp: new Date().toISOString(),
-          id: "hist_" + Math.random().toString(36).substring(2, 9)
-        });
-      }
-      dbOrders[foundIdx].updatedAt = new Date().toISOString();
+    try {
+      await api.put(`/admin/orders/${orderId}/assign`, { partnerId });
+      toast.success(`Rider ${selectedPartner.name} assigned! Order is now Out for Delivery.`);
+      fetchOrders();
+    } catch (err) {
+      toast.error("Failed to assign rider");
     }
-
-    toast.success(`Rider ${selectedPartner.name} assigned! Order is now Out for Delivery.`);
   };
 
   const handleVerifyOtp = (orderId: string, correctOtp: string) => {
@@ -192,7 +148,7 @@ const Admin = () => {
     }
   };
 
-  const handleSaveProductEdit = (prodId: string) => {
+  const handleSaveProductEdit = async (prodId: string) => {
     const numericPrice = parseFloat(editPrice);
     const numericStock = parseInt(editStock);
 
@@ -201,37 +157,34 @@ const Admin = () => {
       return;
     }
 
-    const updated = products.map((p) => {
-      if (p.id === prodId) {
-        return { ...p, price: numericPrice, stock: numericStock };
-      }
-      return p;
-    });
-    setProducts(updated);
-
-    const foundIdx = dbProducts.findIndex((p) => p.id === prodId);
-    if (foundIdx !== -1) {
-      dbProducts[foundIdx].price = numericPrice;
-      dbProducts[foundIdx].stock = numericStock;
+    try {
+      await api.put(`/products/${prodId}`, { price: numericPrice, stock: numericStock });
+    } catch (err) {
+      // ignore or fallback to local state update
     }
+
+    setProducts((prev) =>
+      prev.map((p) => (p.id === prodId ? { ...p, price: numericPrice, stock: numericStock } : p))
+    );
 
     setEditingProdId(null);
     toast.success("Product updated successfully!");
   };
 
-  const handleDeleteProduct = (prodId: string) => {
+  const handleDeleteProduct = async (prodId: string) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
-    const updated = products.filter((p) => p.id !== prodId);
-    setProducts(updated);
+    try {
+      await api.delete(`/products/${prodId}`);
+    } catch (err) {
+      // ignore or fallback to local state update
+    }
 
-    const idx = dbProducts.findIndex((p) => p.id === prodId);
-    if (idx !== -1) dbProducts.splice(idx, 1);
-
+    setProducts((prev) => prev.filter((p) => p.id !== prodId));
     toast.success("Product deleted successfully!");
   };
 
-  const handleCreateProduct = (e: any) => {
+  const handleCreateProduct = async (e: any) => {
     e.preventDefault();
 
     const priceNum = parseFloat(newProdPrice);
@@ -243,8 +196,7 @@ const Admin = () => {
       return;
     }
 
-    const newProd = {
-      id: "prod_" + Math.random().toString(36).substring(2, 9),
+    const payload = {
       name: newProdName,
       description: newProdDesc || "Fresh organic product.",
       price: priceNum,
@@ -254,14 +206,34 @@ const Admin = () => {
       unit: newProdUnit,
       stock: stockNum,
       isOrganic: true,
-      rating: 4.5,
-      reviewCount: 12,
-      discount: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
-      createdAt: new Date().toISOString(),
     };
 
-    setProducts([newProd, ...products]);
-    dbProducts.unshift(newProd);
+    try {
+      const res = await api.post("/products", payload);
+      if (res.data?.product) {
+        setProducts((prev) => [res.data.product, ...prev]);
+      } else {
+        const newProd = {
+          id: "prod_" + Math.random().toString(36).substring(2, 9),
+          ...payload,
+          rating: 4.5,
+          reviewCount: 12,
+          discount: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
+          createdAt: new Date().toISOString(),
+        };
+        setProducts((prev) => [newProd, ...prev]);
+      }
+    } catch (err) {
+      const newProd = {
+        id: "prod_" + Math.random().toString(36).substring(2, 9),
+        ...payload,
+        rating: 4.5,
+        reviewCount: 12,
+        discount: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
+        createdAt: new Date().toISOString(),
+      };
+      setProducts((prev) => [newProd, ...prev]);
+    }
 
     setNewProdName("");
     setNewProdDesc("");
@@ -274,24 +246,28 @@ const Admin = () => {
   };
 
   // --- Partner Handlers ---
-  const handleTogglePartnerStatus = (partnerId: string) => {
-    const updated = partners.map((p) => {
-      if (p.id === partnerId) {
-        return { ...p, isActive: !p.isActive };
+  const handleTogglePartnerStatus = async (partnerId: string) => {
+    try {
+      const res = await api.put(`/admin/partners/${partnerId}/status`);
+      if (res.data?.partner) {
+        setPartners((prev) =>
+          prev.map((p) => (p.id === partnerId ? res.data.partner : p))
+        );
+      } else {
+        setPartners((prev) =>
+          prev.map((p) => (p.id === partnerId ? { ...p, isActive: !p.isActive } : p))
+        );
       }
-      return p;
-    });
-    setPartners(updated);
-
-    const foundIdx = dbPartners.findIndex((p) => p.id === partnerId);
-    if (foundIdx !== -1) {
-      dbPartners[foundIdx].isActive = !dbPartners[foundIdx].isActive;
+      toast.success("Rider status updated successfully.");
+    } catch (err) {
+      setPartners((prev) =>
+        prev.map((p) => (p.id === partnerId ? { ...p, isActive: !p.isActive } : p))
+      );
+      toast.success("Rider status updated.");
     }
-
-    toast.success("Rider status updated successfully.");
   };
 
-  const handleCreatePartner = (e: any) => {
+  const handleCreatePartner = async (e: any) => {
     e.preventDefault();
 
     if (!newPartnerName.trim() || !newPartnerEmail.trim() || !newPartnerPhone.trim()) {
@@ -299,27 +275,30 @@ const Admin = () => {
       return;
     }
 
-    const newPartner = {
-      id: "partner_" + Math.random().toString(36).substring(2, 9),
+    const payload = {
       name: newPartnerName,
       email: newPartnerEmail,
       phone: newPartnerPhone,
-      avatar: "",
       vehicleType: newPartnerVehicle,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
-    setPartners([...partners, newPartner]);
-    dbPartners.push(newPartner);
+    try {
+      const res = await api.post("/admin/partners", payload);
+      if (res.data?.partner) {
+        setPartners((prev) => [res.data.partner, ...prev]);
+      } else {
+        fetchPartners();
+      }
+      toast.success("Delivery partner registered successfully!");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to register delivery partner.";
+      toast.error(msg);
+    }
 
     setNewPartnerName("");
     setNewPartnerEmail("");
     setNewPartnerPhone("");
     setShowAddPartner(false);
-
-    toast.success("Delivery partner registered!");
   };
 
   // Filter products by search
@@ -353,8 +332,8 @@ const Admin = () => {
                   setEditingProdId(null);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${isActive
-                    ? "bg-app-green text-white shadow-xs"
-                    : "text-app-text-light hover:text-app-green hover:bg-app-cream-dark"
+                  ? "bg-app-green text-white shadow-xs"
+                  : "text-app-text-light hover:text-app-green hover:bg-app-cream-dark"
                   }`}
               >
                 <Icon className="size-4" />
@@ -707,8 +686,8 @@ const Admin = () => {
                   <button
                     onClick={() => handleTogglePartnerStatus(partner.id)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${partner.isActive
-                        ? "border-red-200 text-red-600 hover:bg-red-50"
-                        : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                      ? "border-red-200 text-red-600 hover:bg-red-50"
+                      : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
                       }`}
                   >
                     {partner.isActive ? "Deactivate" : "Activate"}

@@ -2,8 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import type { Order, OrderItem, Product } from "../types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { dummyDashboardOrdersData, statusColors } from "../assets/assets";
+import { statusColors } from "../assets/assets";
 import toast from "react-hot-toast";
+
+
+import api from "../config/api";
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -16,8 +19,22 @@ const MyOrders = () => {
   const { clearCart, addToCart } = useCart();
 
   const fetchOrders = useCallback(async () => {
-    setOrders(dummyDashboardOrdersData as unknown as Order[]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await api.get("/orders");
+      if (res.data && Array.isArray(res.data)) {
+        setOrders(res.data as Order[]);
+      } else if (res.data && Array.isArray(res.data.orders)) {
+        setOrders(res.data.orders as Order[]);
+      } else {
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user orders from API:", error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -33,7 +50,7 @@ const MyOrders = () => {
   const handleOrderAgain = (items: OrderItem[]) => {
     let addedAny = false;
     items.forEach((item) => {
-      const prodId = typeof item.product === 'string' ? item.product : (item.product as any)?.id || (item.product as any)?._id || "";
+      const prodId = typeof item.product === 'string' ? item.product : (item.product as any)?.id || (item.product as any)?.id || "";
       const prod: Product = {
         id: prodId,
 
@@ -101,10 +118,10 @@ const MyOrders = () => {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div key={(order as any)._id || order.id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+            <div key={(order as any).id || order.id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-100">
                 <div>
-                  <p className="text-xs text-zinc-400">Order ID: {(order as any)._id || order.id}</p>
+                  <p className="text-xs text-zinc-400">Order ID: {(order as any).id || order.id}</p>
                   <p className="text-xs text-zinc-500 mt-1">
                     {new Date(order.createdAt).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -120,7 +137,7 @@ const MyOrders = () => {
                     {order.status}
                   </span>
                   <button
-                    onClick={() => navigate(`/orders/${(order as any)._id || order.id}/track`)}
+                    onClick={() => navigate(`/orders/${(order as any).id || order.id}/track`)}
                     className="px-4 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-xl hover:bg-orange-600 transition-colors"
                   >
                     Track Order
