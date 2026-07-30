@@ -23,7 +23,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const getProdId = (p: any): string => {
     if (!p) return "";
     if (typeof p === "string") return p;
-    return p._id || p.id || "";
+    return p.id || p.id || "";
   };
 
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -73,8 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // 1. Per-product quantity limit check
     if (currentQty + quality > MAX_ITEM_LIMIT) {
       toast.error(
-        `Cannot add product. Maximum limit is ${MAX_ITEM_LIMIT} items per product.${
-          currentQty > 0 ? ` (Currently in cart: ${currentQty})` : ""
+        `Cannot add product. Maximum limit is ${MAX_ITEM_LIMIT} items per product.${currentQty > 0 ? ` (Currently in cart: ${currentQty})` : ""
         }`
       );
       return false;
@@ -191,4 +190,4 @@ export function useCart() {
     throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}
+}

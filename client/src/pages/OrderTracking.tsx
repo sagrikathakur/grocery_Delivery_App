@@ -6,16 +6,16 @@ import Loading from '../components/Loading';
 import LiveMap from '../components/OrderTracking/LiveMap';
 import OrderOTP from '../components/OrderTracking/OrderOTP';
 import OrderTimeLine from '../components/OrderTracking/OrderTimeLine';
-import { 
-  ArrowLeft, 
-  Phone, 
-  MessageSquare, 
-  MapPin, 
-  CreditCard, 
-  ShoppingBag, 
-  Info, 
-  Truck, 
-  User 
+import {
+  ArrowLeft,
+  Phone,
+  MessageSquare,
+  MapPin,
+  CreditCard,
+  ShoppingBag,
+  Info,
+  Truck,
+  User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -27,7 +27,7 @@ const OrderTracking = () => {
   const [liveLocation, setLiveLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    const foundOrder = dummyDashboardOrdersData.find((o) => o._id === id);
+    const foundOrder = dummyDashboardOrdersData.find((o) => o.id === id);
     if (foundOrder) setOrder(foundOrder as unknown as Order);
     setLoading(false);
   }, [id, navigate]);
@@ -65,7 +65,7 @@ const OrderTracking = () => {
   }, [order]);
 
   if (loading) return <Loading />;
-  
+
   if (!order) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-app-cream">
@@ -96,15 +96,14 @@ const OrderTracking = () => {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-app-green">Track Order</h1>
-            <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${
-              order.status === "Delivered" ? "bg-green-100 text-green-700" :
-              order.status === "Cancelled" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
-            }`}>
+            <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${order.status === "Delivered" ? "bg-green-100 text-green-700" :
+                order.status === "Cancelled" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+              }`}>
               {order.status}
             </span>
           </div>
           <p className="text-xs text-app-text-light mt-1">
-            Order ID: <span className="font-mono font-bold text-app-green">#{order._id}</span> • Placed on {new Date(order.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            Order ID: <span className="font-mono font-bold text-app-green">#{order.id}</span> • Placed on {new Date(order.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
       </div>
@@ -117,8 +116,8 @@ const OrderTracking = () => {
           <p className="text-xs text-app-text-light font-medium">Estimated Delivery</p>
           <p className="text-sm font-bold text-app-green">
             {order.status === "Delivered" ? "Delivered successfully" :
-             order.status === "Cancelled" ? "Order Cancelled" :
-             order.status === "Out for Delivery" ? "Arriving in 10-15 mins" : "Within 45-60 mins"}
+              order.status === "Cancelled" ? "Order Cancelled" :
+                order.status === "Out for Delivery" ? "Arriving in 10-15 mins" : "Within 45-60 mins"}
           </p>
         </div>
       </div>
@@ -160,15 +159,15 @@ const OrderTracking = () => {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => toast.success(`Calling ${order.deliveryPartner?.name}...`)}
             className="px-4 py-2.5 rounded-xl border border-app-border bg-white text-app-green hover:bg-app-cream-dark font-semibold text-sm flex items-center gap-2 cursor-pointer"
           >
             <Phone className="size-4" /> Call
           </button>
-          <button 
+          <button
             onClick={() => toast.success(`Opening chat with ${order.deliveryPartner?.name}...`)}
             className="px-4 py-2.5 rounded-xl bg-app-green hover:bg-app-green-light text-white font-semibold text-sm flex items-center gap-2 cursor-pointer"
           >
@@ -230,7 +229,7 @@ const OrderTracking = () => {
         <CreditCard className="size-4 text-app-green-lighter" />
         Payment Summary
       </h3>
-      
+
       <div className="space-y-2 text-sm border-b border-app-border pb-4 mb-4 text-app-text-light">
         <div className="flex justify-between">
           <span>Subtotal</span>
@@ -256,9 +255,8 @@ const OrderTracking = () => {
           <CreditCard className="size-4 text-app-green" />
           <span className="font-medium text-app-green capitalize">Payment: {order.paymentMethod}</span>
         </div>
-        <span className={`px-2 py-0.5 rounded-full font-bold ${
-          order.isPaid ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-        }`}>
+        <span className={`px-2 py-0.5 rounded-full font-bold ${order.isPaid ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+          }`}>
           {order.isPaid ? "Paid" : "Pending"}
         </span>
       </div>
@@ -268,9 +266,9 @@ const OrderTracking = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen mb-20 animate-fade-in">
       {renderHeader()}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Side: Map and Details */}
         <div className="lg:col-span-2 space-y-6">
           {renderMapCard()}

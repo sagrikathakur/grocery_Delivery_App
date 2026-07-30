@@ -5,6 +5,9 @@ import authRouter from "./routes/authRoutes.js";
 import productRouter from "./routes/productRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
+import addressRouter from "./routes/addressRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
+import deliveryPartnerRouter from "./routes/deliveryPartnerRoutes.js";
 
 // inngest//
 
@@ -28,6 +31,9 @@ app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 app.use("/api/uploads", uploadRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/addresses", addressRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/delivery", deliveryPartnerRouter);
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
 app.post("/api/test/low-stock-alert", async (req: Request, res: Response) => {

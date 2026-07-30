@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dummyAddressData } from "../assets/assets";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Trash2, 
-  Plus, 
-  Check, 
-  Home, 
-  Briefcase 
+import {
+  ArrowLeft,
+  MapPin,
+  Trash2,
+  Plus,
+  Check,
+  Home,
+  Briefcase
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,15 +27,15 @@ const Addresses = () => {
     // Update local state
     const updated = addresses.map((addr) => ({
       ...addr,
-      isDefault: addr._id === id,
+      isDefault: addr.id === id,
     }));
     setAddresses(updated);
 
     // Update in-memory reference
     dummyAddressData.forEach((addr) => {
-      addr.isDefault = addr._id === id;
+      addr.isDefault = addr.id === id;
     });
-    
+
     toast.success("Default address updated!");
   };
 
@@ -45,19 +45,19 @@ const Addresses = () => {
       return;
     }
 
-    const wasDefault = addresses.find((addr) => addr._id === id)?.isDefault;
+    const wasDefault = addresses.find((addr) => addr.id === id)?.isDefault;
 
     // Filter local state
-    let updated = addresses.filter((addr) => addr._id !== id);
+    let updated = addresses.filter((addr) => addr.id !== id);
     if (wasDefault && updated.length > 0) {
       updated[0].isDefault = true;
     }
     setAddresses(updated);
 
     // Filter in-memory database reference
-    const idx = dummyAddressData.findIndex((addr) => addr._id === id);
+    const idx = dummyAddressData.findIndex((addr) => addr.id === id);
     if (idx !== -1) dummyAddressData.splice(idx, 1);
-    
+
     // Maintain at least one default
     if (wasDefault && dummyAddressData.length > 0) {
       dummyAddressData[0].isDefault = true;
@@ -75,7 +75,7 @@ const Addresses = () => {
     }
 
     const newAddress = {
-      _id: "addr_" + Math.random().toString(36).substring(2, 9),
+      id: "addr_" + Math.random().toString(36).substring(2, 9),
       label: label,
       address: addressLine,
       city: city,
@@ -144,18 +144,16 @@ const Addresses = () => {
           ) : (
             addresses.map((addr) => (
               <div
-                key={addr._id}
-                className={`p-5 rounded-2xl border transition-all ${
-                  addr.isDefault
+                key={addr.id}
+                className={`p-5 rounded-2xl border transition-all ${addr.isDefault
                     ? "bg-emerald-50/40 border-emerald-500/30 ring-1 ring-emerald-500/20"
                     : "bg-white border-zinc-200 hover:border-zinc-300"
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex gap-3">
-                    <div className={`p-2.5 rounded-xl h-fit ${
-                      addr.isDefault ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600"
-                    }`}>
+                    <div className={`p-2.5 rounded-xl h-fit ${addr.isDefault ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600"
+                      }`}>
                       {getLabelIcon(addr.label)}
                     </div>
                     <div>
@@ -177,14 +175,14 @@ const Addresses = () => {
                   <div className="flex items-center gap-2">
                     {!addr.isDefault && (
                       <button
-                        onClick={() => handleSetDefault(addr._id)}
+                        onClick={() => handleSetDefault(addr.id)}
                         className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors border border-zinc-200"
                       >
                         Set Default
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteAddress(addr._id)}
+                      onClick={() => handleDeleteAddress(addr.id)}
                       className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Address"
                     >
@@ -216,11 +214,10 @@ const Addresses = () => {
                     key={lbl}
                     type="button"
                     onClick={() => setLabel(lbl)}
-                    className={`py-2 px-3 text-xs font-medium rounded-xl border flex items-center justify-center gap-1.5 transition-all ${
-                      label === lbl
+                    className={`py-2 px-3 text-xs font-medium rounded-xl border flex items-center justify-center gap-1.5 transition-all ${label === lbl
                         ? "bg-zinc-900 border-zinc-900 text-white shadow-sm"
                         : "bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-                    }`}
+                      }`}
                   >
                     {getLabelIcon(lbl)}
                     {lbl}

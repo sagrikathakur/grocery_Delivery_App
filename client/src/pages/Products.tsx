@@ -1,31 +1,61 @@
-import { useState, useMemo, useEffect } from "react";
-import { dummyProducts, categoriesData } from "../assets/assets";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { categoriesData } from "../assets/assets";
 import ProductCard from "../components/ProductCard";
 import Loading from "../components/Loading";
 import FilterPanel from "../components/FilterPanel";
 import { Search } from "lucide-react";
+import api from "../config/api";
+import type { Product } from "../types";
 
 const Products = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category") || "all";
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [search, setSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Sync category state whenever the URL query parameter changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    const catFromUrl = searchParams.get("category") || "all";
+    setSelectedCategory(catFromUrl);
+  }, [searchParams]);
 
-  const filteredProducts = useMemo(() => {
-    return dummyProducts.filter((product) => {
-      const matchesCategory =
-        selectedCategory === "all" || product.category === selectedCategory;
-      const matchesSearch =
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.description.toLowerCase().includes(search.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
+  const handleSelectCategory = (categorySlug: string) => {
+    setSelectedCategory(categorySlug);
+    if (categorySlug === "all") {
+      searchParams.delete("category");
+    } else {
+      searchParams.set("category", categorySlug);
+    }
+    setSearchParams(searchParams);
+  };
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (selectedCategory && selectedCategory !== "all") {
+        params.category = selectedCategory;
+      }
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get("/products", { params });
+      const productList = response.data?.products || [];
+      setProducts(productList);
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, [selectedCategory, search]);
 
   return (
@@ -56,20 +86,20 @@ const Products = () => {
         <FilterPanel
           categories={categoriesData}
           selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={handleSelectCategory}
         />
 
         <div className="flex-1 w-full min-w-0">
           {loading ? (
             <Loading />
-          ) : filteredProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-zinc-500 text-base">No products found matching your criteria.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product._id} product={product} />
+              {products.map((product) => (
+                <ProductCard key={product.id || (product as any)._id} product={product} />
               ))}
             </div>
           )}

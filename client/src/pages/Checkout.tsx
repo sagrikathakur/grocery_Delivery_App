@@ -5,12 +5,12 @@ import CheckoutAddress from "../components/Checkout/CheckoutAddress";
 import CheckoutPayment from "../components/Checkout/CheckoutPayment";
 import CheckoutReview from "../components/Checkout/CheckoutReview";
 import { dummyAddressData, dummyDashboardOrdersData } from "../assets/assets";
-import { 
-  ShoppingBag, 
-  MapPin, 
-  CreditCard, 
-  CheckCircle, 
-  ShieldCheck 
+import {
+  ShoppingBag,
+  MapPin,
+  CreditCard,
+  CheckCircle,
+  ShieldCheck
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -20,7 +20,7 @@ const Checkout = () => {
 
   const [step, setStep] = useState<string>("address"); // "address" | "payment" | "review"
   const [address, setAddress] = useState<any>({
-    _id: dummyAddressData[0]?._id || "",
+    id: dummyAddressData[0]?.id || "",
     label: dummyAddressData[0]?.label || "",
     address: dummyAddressData[0]?.address || "",
     city: dummyAddressData[0]?.city || "",
@@ -53,16 +53,16 @@ const Checkout = () => {
     // Simulate order placement delay for rich user feedback
     setTimeout(() => {
       const orderId = "order_" + Math.random().toString(36).substring(2, 9);
-      
+
       const newOrder = {
-        _id: orderId,
+        id: orderId,
         user: {
-          _id: "user_john",
+          id: "user_john",
           name: mockUser.name,
           email: mockUser.email,
         },
         items: items.map((item) => ({
-          product: item.product._id || (item.product as any).id,
+          product: item.product.id || (item.product as any).id,
           name: item.product.name,
           image: item.product.image,
           price: item.product.price,
@@ -89,11 +89,11 @@ const Checkout = () => {
             status: "Placed",
             note: "Order placed successfully",
             timestamp: new Date().toISOString(),
-            _id: "hist_" + Math.random().toString(36).substring(2, 9),
+            id: "hist_" + Math.random().toString(36).substring(2, 9),
           },
         ],
         deliveryPartner: {
-          _id: "69bbfc3866db7c6cdea47ede",
+          id: "69bbfc3866db7c6cdea47ede",
           name: "Rahul",
           email: "rahul@example.com",
           phone: "987654321",
@@ -158,29 +158,26 @@ const Checkout = () => {
             <div key={s.id} className="flex items-center flex-1 last:flex-initial">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                    isCompleted
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${isCompleted
                       ? "bg-emerald-500 text-white"
                       : isActive
-                      ? "bg-app-green text-white ring-4 ring-app-green/20"
-                      : "bg-app-cream border border-app-border text-app-text-light"
-                  }`}
+                        ? "bg-app-green text-white ring-4 ring-app-green/20"
+                        : "bg-app-cream border border-app-border text-app-text-light"
+                    }`}
                 >
                   {isCompleted ? <CheckCircle className="size-5" /> : <Icon className="size-5" />}
                 </div>
                 <span
-                  className={`text-sm font-semibold hidden sm:inline ${
-                    isActive || isCompleted ? "text-zinc-900" : "text-zinc-400"
-                  }`}
+                  className={`text-sm font-semibold hidden sm:inline ${isActive || isCompleted ? "text-zinc-900" : "text-zinc-400"
+                    }`}
                 >
                   {s.label}
                 </span>
               </div>
               {idx < arr.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 transition-colors ${
-                    isCompleted ? "bg-emerald-500" : "bg-zinc-200"
-                  }`}
+                  className={`flex-1 h-0.5 mx-4 transition-colors ${isCompleted ? "bg-emerald-500" : "bg-zinc-200"
+                    }`}
                 />
               )}
             </div>

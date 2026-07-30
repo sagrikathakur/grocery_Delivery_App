@@ -2,38 +2,30 @@ import { BikeIcon, SearchIcon, ShoppingCartIcon, UserIcon } from "lucide-react";
 import React, { useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
-  const user: any = { name: "john", email: "john@gmail.com", isAdmin: true }
+  const { user, logout } = useAuth();
   const { cartCount, setIsCartOpen } = useCart();
 
-
   const [searchQuery, setSearchQuery] = useState("");
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const navigate = useNavigate()
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchQuery("")
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
     }
-  }
+  };
 
-
-  // logout//
+  // logout
   const handleLogout = () => {
-    setUserMenuOpen(false)
-    navigate("/")
-
-  }
-
-
-
-
-
-
+    logout();
+    setUserMenuOpen(false);
+    navigate("/");
+  };
 
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-app-border ">
@@ -44,57 +36,38 @@ const Navbar = () => {
           <BikeIcon size={24} /> Instacart
         </Link>
 
-
         <div className="w-full flex items-center justify-end gap-4 lg:gap-10">
 
-
           <div className="hidden md:flex items-center gap-6 text-sm text-zinc-600">
-
             <Link to='/'>Home</Link>
             <Link to='/products'>Products</Link>
             <Link to='/deals' className="text-app-orange">Deals</Link>
-
-
           </div>
 
           {/* form */}
-
           <form onSubmit={handleSearch} action="" className="hidden sm:flex flex-1 max-w-sm text-xs sm:text-sm">
             <div className="relative w-full">
-
-
               <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
               <input type="text" placeholder="Search products.." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-8 p-2 bg-orange-50 rounded-full ring ring-app-orange/15 focus:ring-app-orange/30" />
             </div>
-
-
-
           </form>
 
-
           {/* right action */}
-
           <div className="flex items-center gap-3">
             {/* cart and user */}
             <button className="relative p-2 rounded-xl " onClick={() => setIsCartOpen(true)}>
-
               <ShoppingCartIcon className="size-5 text-zinc-900" />
               {
                 cartCount > 0 && <span className="absolute -top-1 -right-1 size-4 bg-app-orange text-white text-[10px] rounded-full flex-center">
                   {cartCount}
                 </span>
               }
-
-
-
-
             </button>
-
 
             {/* user */}
             <div className="relative">
               {
-                user && (
+                user ? (
                   <>
                     <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-1.5 p-2 rounded-xl text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer">
                       <UserIcon className="size-5" />
@@ -122,6 +95,11 @@ const Navbar = () => {
                       </div>
                     )}
                   </>
+                ) : (
+                  <Link to="/login" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-app-green text-white text-sm font-medium hover:bg-app-green-light transition-colors">
+                    <UserIcon className="size-4" />
+                    <span>Login</span>
+                  </Link>
                 )
               }
             </div>
@@ -129,7 +107,7 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

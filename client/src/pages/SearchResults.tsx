@@ -1,22 +1,38 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { dummyProducts } from "../assets/assets";
 import ProductCard from "../components/ProductCard";
+import Loading from "../components/Loading";
 import { Search } from "lucide-react";
+import api from "../config/api";
+import type { Product } from "../types";
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || searchParams.get("query") || "";
 
-  const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return dummyProducts.filter(
-      (product) =>
-        product.name.toLowerCase().includes(q) ||
-        product.description.toLowerCase().includes(q) ||
-        product.category.toLowerCase().includes(q)
-    );
+  const [results, setResults] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    api
+      .get("/products", { params: { search: query.trim() } })
+      .then((res) => {
+        const productList: Product[] = res.data?.products || [];
+        setResults(productList);
+      })
+      .catch((err) => {
+        console.error("Search failed:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [query]);
 
   return (
@@ -31,7 +47,9 @@ const SearchResults = () => {
         </p>
       </div>
 
-      {!query.trim() || results.length === 0 ? (
+      {loading ? (
+        <Loading />
+      ) : !query.trim() || results.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-2xl border border-zinc-200 p-8">
           <p className="text-zinc-500 text-base mb-4">No products found matching your search term.</p>
           <Link
@@ -44,7 +62,7 @@ const SearchResults = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
           {results.map((product) => (
-            <ProductCard key={product._id} product={product} />
+            <ProductCard key={product.id || (product as any)._id} product={product} />
           ))}
         </div>
       )}

@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
 import { heroSectionData } from '../assets/assets'
 import { BikeIcon, UserIcon, MailIcon, LockIcon, Loader2Icon } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import api from '../config/api'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const Login = () => {
   const [isLoginState, setIsLoginState] = useState(true)
@@ -9,43 +12,48 @@ const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true);
-
-    setTimeout(() => window.location.href = "/", 1000)
+    setLoading(true)
+    try {
+      if (isLoginState) {
+        const response = await api.post("/auth/login", { email, password })
+        if (response.data?.success) {
+          login(response.data.token, response.data.user)
+          toast.success("Login successful!")
+          navigate("/")
+        }
+      } else {
+        const response = await api.post("/auth/register", { name, email, password })
+        if (response.data?.success) {
+          login(response.data.token, response.data.user)
+          toast.success("Account created successfully!")
+          navigate("/")
+        }
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || error.message || "Authentication failed"
+      toast.error(msg)
+    } finally {
+      setLoading(false)
+    }
   }
-
-
-
-
-
-
-
-
-
 
   return (
     <div className='min-h-screen flex'>
       {/* left side -> this will me image section */}
-
       <div className='hidden lg:flex lg:w-1/2 bg-app-green relative items-center justify-center'>
-
         <img src={heroSectionData.hero_image} alt="" className='absolute inset-0 object-cover h-full bg-center opacity-10' />
-
-
         <div className='relative text-center px-12'>
           <h2 className='text-4xl font-semibold text-white mb-4'>Welcome back to instaCart</h2>
           <p className='text-white/60 font-serif text-xl max-w-sm mx-auto'>Fresh groceries and organic produce , delivered at your doorstep</p>
         </div>
-
-
       </div>
 
-      {/* right right  */}
-
-
+      {/* right side */}
       <div className=' flex-1 flex-center px-4 py-12 bg-app-cream'>
         <div className='w-full max-w-md'>
           <div className='text-center mb-8'>
@@ -54,7 +62,6 @@ const Login = () => {
               <span className='text-2xl font-semibold text-app-green'>Instacart</span>
             </Link>
 
-
             <h1 className='text-2xl font-semibold text-app-green mb-2 '>{isLoginState ? "sign in to your account" : "sign up for an account"}</h1>
             <p>
               {isLoginState ? "Dont have an account" : "already have an account ?"}
@@ -62,18 +69,10 @@ const Login = () => {
                 className='text-orange-500 ml-1 font-semibold hover:text-orange-600 transition-colors'>
                 {isLoginState ? "Create one" : "Sign in"}
               </button>
-
-
-
-
-
-
             </p>
           </div>
 
           {/* form */}
-
-
           <form onSubmit={handleSubmit} className='space-y-5 animate-fade-in'>
             {
               !isLoginState && (
@@ -111,7 +110,6 @@ const Login = () => {
             </label>
 
             {/* password */}
-
             <label className='text-sm flex flex-col gap-1.5 text-app-text-light font-medium'>
               Password
               <div className='relative'>
@@ -127,52 +125,18 @@ const Login = () => {
               </div>
             </label>
 
-
-
-
-
             {/* button */}
-
-
-
-
-
             <button type='submit'
               disabled={loading}
               className='flex-center w-full py-3 bg-green-950 text-white font-semibold rounded-xl hover:bg-green-900 transition-colors disabled:opacity-50'>
-
-
               {
                 loading ? <Loader2Icon className='animate-spin' /> : isLoginState ? "sign in" : "sign up"
               }
-
-
             </button>
           </form>
-
-
-
-
-
         </div>
       </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
     </div>
-
-
-
   )
 }
 

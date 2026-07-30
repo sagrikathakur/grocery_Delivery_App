@@ -1,18 +1,18 @@
 import React, { useState } from "react";
-import { 
-  dummyDashboardOrdersData, 
-  dummyProducts, 
-  dummyDeliveryPartnerData, 
-  statusColors 
+import api from "../config/api";
+import {
+  dummyDashboardOrdersData,
+  dummyDeliveryPartnerData,
+  statusColors
 } from "../assets/assets";
-import { 
-  ShoppingBag, 
-  Package, 
-  Users, 
-  Plus, 
-  Trash2, 
-  Edit, 
-  Search, 
+import {
+  ShoppingBag,
+  Package,
+  Users,
+  Plus,
+  Trash2,
+  Edit,
+  Search,
   Truck,
   Check,
   X
@@ -21,7 +21,7 @@ import toast from "react-hot-toast";
 
 // Explicitly type-cast shared datasets to any[] at module-level to bypass shape-mismatch compiler warnings
 const dbOrders = dummyDashboardOrdersData as any[];
-const dbProducts = dummyProducts as any[];
+const dbProducts: any[] = [];
 const dbPartners = dummyDeliveryPartnerData as any[];
 
 const Admin = () => {
@@ -29,8 +29,24 @@ const Admin = () => {
 
   // Live component states initialized from local references
   const [orders, setOrders] = useState<any[]>([...dbOrders]);
-  const [products, setProducts] = useState<any[]>([...dbProducts]);
+  const [products, setProducts] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([...dbPartners]);
+
+  React.useEffect(() => {
+    api.get("/products")
+      .then((res) => {
+        if (res.data?.products) {
+          const normalized = res.data.products.map((p: any) => ({
+            ...p,
+            id: p.id || p._id,
+          }));
+          setProducts(normalized);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch admin products:", err);
+      });
+  }, []);
 
 
 
@@ -66,18 +82,18 @@ const Admin = () => {
   // --- Order Handlers ---
   const handleStatusChange = (orderId: string, newStatus: string) => {
     const updated = orders.map((o) => {
-      if (o._id === orderId) {
+      if (o.id === orderId) {
         const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
-        const newHistory = hasHistory 
-          ? o.statusHistory 
-          : [...o.statusHistory, { 
-              status: newStatus, 
-              note: `Status updated to ${newStatus}`, 
-              timestamp: new Date().toISOString(),
-              _id: "hist_" + Math.random().toString(36).substring(2, 9)
-            }];
-        return { 
-          ...o, 
+        const newHistory = hasHistory
+          ? o.statusHistory
+          : [...o.statusHistory, {
+            status: newStatus,
+            note: `Status updated to ${newStatus}`,
+            timestamp: new Date().toISOString(),
+            id: "hist_" + Math.random().toString(36).substring(2, 9)
+          }];
+        return {
+          ...o,
           status: newStatus,
           statusHistory: newHistory,
           updatedAt: new Date().toISOString()
@@ -87,7 +103,7 @@ const Admin = () => {
     });
     setOrders(updated);
 
-    const foundIdx = dbOrders.findIndex((o) => o._id === orderId);
+    const foundIdx = dbOrders.findIndex((o) => o.id === orderId);
     if (foundIdx !== -1) {
       dbOrders[foundIdx].status = newStatus;
       const history = dbOrders[foundIdx].statusHistory;
@@ -97,7 +113,7 @@ const Admin = () => {
           status: newStatus,
           note: `Status updated to ${newStatus}`,
           timestamp: new Date().toISOString(),
-          _id: "hist_" + Math.random().toString(36).substring(2, 9)
+          id: "hist_" + Math.random().toString(36).substring(2, 9)
         });
       }
       dbOrders[foundIdx].updatedAt = new Date().toISOString();
@@ -107,24 +123,24 @@ const Admin = () => {
   };
 
   const handleAssignPartner = (orderId: string, partnerId: string) => {
-    const selectedPartner = partners.find((p) => p._id === partnerId);
+    const selectedPartner = partners.find((p) => p.id === partnerId);
     if (!selectedPartner) return;
 
     // Automatically transition order status to Out for Delivery when a rider is assigned
     const updated = orders.map((o) => {
-      if (o._id === orderId) {
+      if (o.id === orderId) {
         const newStatus = "Out for Delivery";
         const hasHistory = o.statusHistory.some((h: any) => h.status === newStatus);
-        const newHistory = hasHistory 
-          ? o.statusHistory 
-          : [...o.statusHistory, { 
-              status: newStatus, 
-              note: `Assigned to ${selectedPartner.name} - Out for Delivery`, 
-              timestamp: new Date().toISOString(),
-              _id: "hist_" + Math.random().toString(36).substring(2, 9)
-            }];
-        return { 
-          ...o, 
+        const newHistory = hasHistory
+          ? o.statusHistory
+          : [...o.statusHistory, {
+            status: newStatus,
+            note: `Assigned to ${selectedPartner.name} - Out for Delivery`,
+            timestamp: new Date().toISOString(),
+            id: "hist_" + Math.random().toString(36).substring(2, 9)
+          }];
+        return {
+          ...o,
           deliveryPartner: selectedPartner,
           status: newStatus,
           statusHistory: newHistory,
@@ -135,7 +151,7 @@ const Admin = () => {
     });
     setOrders(updated);
 
-    const foundIdx = dbOrders.findIndex((o) => o._id === orderId);
+    const foundIdx = dbOrders.findIndex((o) => o.id === orderId);
     if (foundIdx !== -1) {
       dbOrders[foundIdx].deliveryPartner = selectedPartner;
       dbOrders[foundIdx].status = "Out for Delivery";
@@ -146,7 +162,7 @@ const Admin = () => {
           status: "Out for Delivery",
           note: `Assigned to ${selectedPartner.name} - Out for Delivery`,
           timestamp: new Date().toISOString(),
-          _id: "hist_" + Math.random().toString(36).substring(2, 9)
+          id: "hist_" + Math.random().toString(36).substring(2, 9)
         });
       }
       dbOrders[foundIdx].updatedAt = new Date().toISOString();
@@ -168,7 +184,7 @@ const Admin = () => {
 
   // --- Product Handlers ---
   const handleEditProduct = (prodId: string) => {
-    const prod = products.find((p) => p._id === prodId);
+    const prod = products.find((p) => p.id === prodId);
     if (prod) {
       setEditingProdId(prodId);
       setEditPrice(prod.price.toString());
@@ -186,14 +202,14 @@ const Admin = () => {
     }
 
     const updated = products.map((p) => {
-      if (p._id === prodId) {
+      if (p.id === prodId) {
         return { ...p, price: numericPrice, stock: numericStock };
       }
       return p;
     });
     setProducts(updated);
 
-    const foundIdx = dbProducts.findIndex((p) => p._id === prodId);
+    const foundIdx = dbProducts.findIndex((p) => p.id === prodId);
     if (foundIdx !== -1) {
       dbProducts[foundIdx].price = numericPrice;
       dbProducts[foundIdx].stock = numericStock;
@@ -206,10 +222,10 @@ const Admin = () => {
   const handleDeleteProduct = (prodId: string) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
-    const updated = products.filter((p) => p._id !== prodId);
+    const updated = products.filter((p) => p.id !== prodId);
     setProducts(updated);
 
-    const idx = dbProducts.findIndex((p) => p._id === prodId);
+    const idx = dbProducts.findIndex((p) => p.id === prodId);
     if (idx !== -1) dbProducts.splice(idx, 1);
 
     toast.success("Product deleted successfully!");
@@ -228,7 +244,7 @@ const Admin = () => {
     }
 
     const newProd = {
-      _id: "prod_" + Math.random().toString(36).substring(2, 9),
+      id: "prod_" + Math.random().toString(36).substring(2, 9),
       name: newProdName,
       description: newProdDesc || "Fresh organic product.",
       price: priceNum,
@@ -260,14 +276,14 @@ const Admin = () => {
   // --- Partner Handlers ---
   const handleTogglePartnerStatus = (partnerId: string) => {
     const updated = partners.map((p) => {
-      if (p._id === partnerId) {
+      if (p.id === partnerId) {
         return { ...p, isActive: !p.isActive };
       }
       return p;
     });
     setPartners(updated);
 
-    const foundIdx = dbPartners.findIndex((p) => p._id === partnerId);
+    const foundIdx = dbPartners.findIndex((p) => p.id === partnerId);
     if (foundIdx !== -1) {
       dbPartners[foundIdx].isActive = !dbPartners[foundIdx].isActive;
     }
@@ -284,7 +300,7 @@ const Admin = () => {
     }
 
     const newPartner = {
-      _id: "partner_" + Math.random().toString(36).substring(2, 9),
+      id: "partner_" + Math.random().toString(36).substring(2, 9),
       name: newPartnerName,
       email: newPartnerEmail,
       phone: newPartnerPhone,
@@ -336,11 +352,10 @@ const Admin = () => {
                   setActiveTab(tab.id);
                   setEditingProdId(null);
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-                  isActive 
-                    ? "bg-app-green text-white shadow-xs" 
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${isActive
+                    ? "bg-app-green text-white shadow-xs"
                     : "text-app-text-light hover:text-app-green hover:bg-app-cream-dark"
-                }`}
+                  }`}
               >
                 <Icon className="size-4" />
                 {tab.label}
@@ -357,12 +372,12 @@ const Admin = () => {
 
           <div className="space-y-4">
             {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs flex flex-col lg:flex-row justify-between gap-6">
-                
+              <div key={order.id} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs flex flex-col lg:flex-row justify-between gap-6">
+
                 {/* Details Card */}
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-mono font-bold text-sm text-app-green">Order #{order._id}</span>
+                    <span className="font-mono font-bold text-sm text-app-green">Order #{order.id}</span>
                     <span className="text-xs text-app-text-light">{new Date(order.createdAt).toLocaleString()}</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold capitalize ${statusColors[order.status] || "bg-zinc-100"}`}>
                       {order.status}
@@ -381,19 +396,19 @@ const Admin = () => {
 
                 {/* Operations Section */}
                 <div className="flex flex-wrap items-center gap-4 lg:self-center shrink-0">
-                  
+
 
                   {/* Rider Assign */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-app-text-light">Rider</label>
                     <select
-                      value={order.deliveryPartner?._id || ""}
-                      onChange={(e) => handleAssignPartner(order._id, e.target.value)}
+                      value={order.deliveryPartner?.id || ""}
+                      onChange={(e) => handleAssignPartner(order.id, e.target.value)}
                       className="px-3 py-2 bg-app-cream rounded-xl border border-app-border text-xs font-semibold text-app-green focus:border-app-green focus:outline-none cursor-pointer"
                     >
                       <option value="" disabled>Select Rider</option>
                       {partners.map((p) => (
-                        <option key={p._id} value={p._id}>{p.name} ({p.vehicleType})</option>
+                        <option key={p.id} value={p.id}>{p.name} ({p.vehicleType})</option>
                       ))}
                     </select>
                   </div>
@@ -407,13 +422,13 @@ const Admin = () => {
                           <input
                             type="text"
                             placeholder="6-digit OTP"
-                            value={enteredOtps[order._id] || ""}
-                            onChange={(e) => setEnteredOtps({ ...enteredOtps, [order._id]: e.target.value })}
+                            value={enteredOtps[order.id] || ""}
+                            onChange={(e) => setEnteredOtps({ ...enteredOtps, [order.id]: e.target.value })}
                             className="w-24 px-2 py-1 border border-app-border rounded-lg text-xs focus:border-app-green focus:outline-none"
                           />
                           <button
                             type="button"
-                            onClick={() => handleVerifyOtp(order._id, order.deliveryOtp)}
+                            onClick={() => handleVerifyOtp(order.id, order.deliveryOtp)}
                             className="px-2.5 py-1.5 bg-app-green hover:bg-app-green-light text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors"
                           >
                             Verify
@@ -441,7 +456,7 @@ const Admin = () => {
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-xl font-bold text-app-green">Inventory Catalog ({products.length})</h2>
-            
+
             <button
               onClick={() => setShowAddProduct(!showAddProduct)}
               className="px-4 py-2.5 bg-app-orange hover:bg-app-orange-dark text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
@@ -544,9 +559,9 @@ const Admin = () => {
                 </thead>
                 <tbody className="divide-y divide-app-border font-medium text-app-green">
                   {filteredProducts.map((p) => {
-                    const isEditing = editingProdId === p._id;
+                    const isEditing = editingProdId === p.id;
                     return (
-                      <tr key={p._id} className="hover:bg-app-cream/20">
+                      <tr key={p.id} className="hover:bg-app-cream/20">
                         <td className="py-3 flex items-center gap-3">
                           <img src={p.image} alt={p.name} className="size-10 rounded-lg object-contain bg-app-cream p-1 border border-app-border shrink-0" />
                           <div className="min-w-0">
@@ -586,7 +601,7 @@ const Admin = () => {
                           <div className="flex items-center justify-end gap-2">
                             {isEditing ? (
                               <>
-                                <button onClick={() => handleSaveProductEdit(p._id)} className="p-1.5 border border-emerald-200 text-emerald-600 bg-emerald-50 rounded-lg cursor-pointer" title="Save">
+                                <button onClick={() => handleSaveProductEdit(p.id)} className="p-1.5 border border-emerald-200 text-emerald-600 bg-emerald-50 rounded-lg cursor-pointer" title="Save">
                                   <Check className="size-4" />
                                 </button>
                                 <button onClick={() => setEditingProdId(null)} className="p-1.5 border border-zinc-200 text-zinc-500 bg-zinc-50 rounded-lg cursor-pointer" title="Cancel">
@@ -595,10 +610,10 @@ const Admin = () => {
                               </>
                             ) : (
                               <>
-                                <button onClick={() => handleEditProduct(p._id)} className="p-1.5 border border-app-border text-app-green hover:bg-app-cream-dark rounded-lg cursor-pointer" title="Edit">
+                                <button onClick={() => handleEditProduct(p.id)} className="p-1.5 border border-app-border text-app-green hover:bg-app-cream-dark rounded-lg cursor-pointer" title="Edit">
                                   <Edit className="size-3.5" />
                                 </button>
-                                <button onClick={() => handleDeleteProduct(p._id)} className="p-1.5 border border-app-border hover:border-red-200 text-app-text-light hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer" title="Delete">
+                                <button onClick={() => handleDeleteProduct(p.id)} className="p-1.5 border border-app-border hover:border-red-200 text-app-text-light hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer" title="Delete">
                                   <Trash2 className="size-3.5" />
                                 </button>
                               </>
@@ -620,7 +635,7 @@ const Admin = () => {
         <div className="space-y-6 animate-fade-in">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-app-green">Delivery riders fleet ({partners.length})</h2>
-            
+
             <button
               onClick={() => setShowAddPartner(!showAddPartner)}
               className="px-4 py-2.5 bg-app-orange hover:bg-app-orange-dark text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
@@ -671,7 +686,7 @@ const Admin = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {partners.map((partner) => (
-              <div key={partner._id} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs flex justify-between gap-4">
+              <div key={partner.id} className="bg-white rounded-2xl border border-app-border p-6 shadow-xs flex justify-between gap-4">
                 <div className="flex gap-4">
                   <div className="size-12 rounded-full bg-app-cream-dark flex-center shrink-0 text-app-green">
                     <Users className="size-5" />
@@ -690,12 +705,11 @@ const Admin = () => {
                     {partner.isActive ? "Active" : "Inactive"}
                   </span>
                   <button
-                    onClick={() => handleTogglePartnerStatus(partner._id)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                      partner.isActive 
-                        ? "border-red-200 text-red-600 hover:bg-red-50" 
+                    onClick={() => handleTogglePartnerStatus(partner.id)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${partner.isActive
+                        ? "border-red-200 text-red-600 hover:bg-red-50"
                         : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                    }`}
+                      }`}
                   >
                     {partner.isActive ? "Deactivate" : "Activate"}
                   </button>

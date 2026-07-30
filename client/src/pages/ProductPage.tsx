@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { dummyProducts } from "../assets/assets";
 import { useCart } from "../context/CartContext";
 import { ShoppingCart, Star, Plus, Minus, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import DummyReviewsSection from "../assets/DummyReviewsSection";
 import ProductCard from "../components/ProductCard";
+import Loading from "../components/Loading";
+import api from "../config/api";
+import type { Product } from "../types";
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +15,45 @@ const ProductPage = () => {
   const { addToCart, items, MAX_ITEM_LIMIT } = useCart();
   const [quantity, setQuantity] = useState(1);
 
-  const product = dummyProducts.find((p) => p._id === id || (p as any).id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+
+    api
+      .get("/products")
+      .then((res) => {
+        const productList: Product[] = res.data?.products || [];
+        const found = productList.find((p) => p.id === id || (p as any)._id === id);
+        if (found) {
+          const normalizedFound = { ...found, id: found.id || (found as any)._id };
+          setProduct(normalizedFound);
+          const related = productList
+            .filter((p) => p.category === found.category && p.id !== id && (p as any)._id !== id)
+            .map((p) => ({ ...p, id: p.id || (p as any)._id }));
+          setRelatedProducts(related);
+        } else {
+          setProduct(null);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load product page:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="py-16">
+        <Loading />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -34,10 +74,6 @@ const ProductPage = () => {
       toast.success(`${quantity} x ${product.name} added to cart!`);
     }
   };
-
-  const relatedProducts = dummyProducts.filter(
-    (p) => p.category === product.category && p._id !== product._id
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -99,7 +135,7 @@ const ProductPage = () => {
                 <span className="px-4 text-sm font-semibold text-zinc-900">{quantity}</span>
                 <button
                   onClick={() => {
-                    const getProdId = (p: any) => (typeof p === "string" ? p : p?._id || p?.id || "");
+                    const getProdId = (p: any) => (typeof p === "string" ? p : p?.id || p?._id || "");
                     const targetId = getProdId(product);
                     const existingItem = items.find((item) => getProdId(item.product) === targetId);
                     const currentQty = existingItem ? existingItem.quantity : 0;
@@ -131,9 +167,9 @@ const ProductPage = () => {
               <ShoppingCart className="size-5" />
               Add to Cart - ${(product.price * quantity).toFixed(2)}
             </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {/* customer review */}
       {product.reviewCount > 0 && <DummyReviewsSection product={product} />}
@@ -147,7 +183,7 @@ const ProductPage = () => {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 xl:gap-8">
             {relatedProducts.slice(0, 5).map((rp) => (
-              <ProductCard key={rp._id} product={rp} />
+              <ProductCard key={rp.id} product={rp} />
             ))}
           </div>
         </section>

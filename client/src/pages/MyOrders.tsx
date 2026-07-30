@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import type { Order, OrderItem } from "../types";
+import type { Order, OrderItem, Product } from "../types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { dummyDashboardOrdersData, dummyProducts, statusColors } from "../assets/assets";
+import { dummyDashboardOrdersData, statusColors } from "../assets/assets";
 import toast from "react-hot-toast";
 
 const MyOrders = () => {
@@ -33,8 +33,25 @@ const MyOrders = () => {
   const handleOrderAgain = (items: OrderItem[]) => {
     let addedAny = false;
     items.forEach((item) => {
-      const prod = dummyProducts.find((p) => p._id === item.product);
-      if (prod && addToCart(prod, item.quantity)) {
+      const prodId = typeof item.product === 'string' ? item.product : (item.product as any)?.id || (item.product as any)?._id || "";
+      const prod: Product = {
+        id: prodId,
+
+        name: item.name,
+        description: "",
+        price: item.price,
+        originalPrice: item.price,
+        image: item.image,
+        category: "groceries",
+        unit: item.unit || "unit",
+        stock: 100,
+        isOrganic: false,
+        rating: 4.5,
+        reviewCount: 1,
+        discount: 0,
+        createdAt: new Date().toISOString()
+      };
+      if (addToCart(prod, item.quantity)) {
         addedAny = true;
       }
     });
@@ -66,11 +83,10 @@ const MyOrders = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 px-4 text-sm font-medium border-b-2 capitalize transition-colors whitespace-nowrap ${
-              activeTab === tab
-                ? "border-orange-500 text-orange-600"
-                : "border-transparent text-zinc-500 hover:text-zinc-700"
-            }`}
+            className={`pb-3 px-4 text-sm font-medium border-b-2 capitalize transition-colors whitespace-nowrap ${activeTab === tab
+              ? "border-orange-500 text-orange-600"
+              : "border-transparent text-zinc-500 hover:text-zinc-700"
+              }`}
           >
             {tab}
           </button>
@@ -85,10 +101,10 @@ const MyOrders = () => {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div key={order._id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+            <div key={(order as any)._id || order.id} className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-100">
                 <div>
-                  <p className="text-xs text-zinc-400">Order ID: {order._id}</p>
+                  <p className="text-xs text-zinc-400">Order ID: {(order as any)._id || order.id}</p>
                   <p className="text-xs text-zinc-500 mt-1">
                     {new Date(order.createdAt).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -104,7 +120,7 @@ const MyOrders = () => {
                     {order.status}
                   </span>
                   <button
-                    onClick={() => navigate(`/orders/${order._id}/track`)}
+                    onClick={() => navigate(`/orders/${(order as any)._id || order.id}/track`)}
                     className="px-4 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-xl hover:bg-orange-600 transition-colors"
                   >
                     Track Order

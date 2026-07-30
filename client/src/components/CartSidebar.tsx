@@ -75,7 +75,7 @@ const CartSidebar = () => {
             </div>
           ) : (
             items.map((item) => {
-              const productId = item.product._id || (item.product as any).id;
+              const productId = item.product.id || (item.product as any).id;
               return (
                 <div
                   key={productId}
@@ -119,11 +119,10 @@ const CartSidebar = () => {
                         <button
                           onClick={() => updateQuality(productId, item.quantity + 1)}
                           disabled={item.quantity >= MAX_ITEM_LIMIT}
-                          className={`p-1 transition-colors ${
-                            item.quantity >= MAX_ITEM_LIMIT
+                          className={`p-1 transition-colors ${item.quantity >= MAX_ITEM_LIMIT
                               ? "text-zinc-300 cursor-not-allowed bg-zinc-100"
                               : "text-zinc-600 hover:bg-zinc-200 cursor-pointer"
-                          }`}
+                            }`}
                           title={item.quantity >= MAX_ITEM_LIMIT ? `Maximum limit of ${MAX_ITEM_LIMIT} reached` : "Increase quantity"}
                         >
                           <Plus className="size-3.5" />
